@@ -1,3 +1,9 @@
+# Python files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
 # Logs
 logs
 *.log
@@ -7,12 +13,17 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node
 node_modules
 dist
 dist-ssr
 *.local
 
-# Editor directories and files
+# Environment files
+.env
+.envrc
+
+# Editor files
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -22,3 +33,56 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python build / packaging
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Python environments
+.venv
+venv/
+env/
+ENV/
+
+# Testing / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+
+# Flask
+instance/
+
+# Documentation
+docs/_build/
+
+# Python tools
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+
+# Misc
+.DS_Store

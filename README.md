@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -14,3 +15,7 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+=======
+# fraud_detection
+The project involves designing and developing a real-time fraud detection platform that analyzes transaction data such as amount, location, device details, time patterns and user behavior. The system will generate a fraud risk score and flag potentially suspicious transactions for further review.
+>>>>>>> dfca04a96e40b5de5876f79cea7984cff510d0a8
