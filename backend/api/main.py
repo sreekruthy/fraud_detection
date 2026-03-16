@@ -2,10 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Routers
-from app.routers import transaction, alerts, auth, feedback
+from api.routers import transaction, alerts, auth, feedback
 
 # Database connection
-from app.db.mongo import connect_to_mongo, close_mongo_connection
+from database.mongo import connect_to_mongo, close_mongo_connection
 
 
 # ---------------------------------------------------

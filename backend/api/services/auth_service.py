@@ -1,5 +1,5 @@
-from app.db.mongo import db
-from app.core.security import verify_password, create_access_token
+from database.mongo import db
+from api.core.security import verify_password, create_access_token
 
 
 # -----------------------------

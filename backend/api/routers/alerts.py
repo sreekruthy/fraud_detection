@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.services.alert_service import get_alerts
+from api.services.alert_service import get_alerts
 
 router = APIRouter(prefix="/api/alerts", tags=["Alerts"])
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from app.schemas.transaction_schema import TransactionCreate
-from app.services.transaction_service import create_transaction, get_transaction
+from api.schemas.transaction_schema import TransactionCreate
+from api.services.transaction_service import create_transaction, get_transaction
 
 router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
 
