@@ -1,0 +1,27 @@
+body{
+  margin:0;
+  font-family: Arial, Helvetica, sans-serif;
+  background:#f4f6f9;
+}
+
+.container{
+  padding:25px;
+}
+
+.card{
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+
+.card-title{
+  font-size:14px;
+  color:#666;
+}
+
+.card-value{
+  font-size:22px;
+  font-weight:bold;
+  margin-top:5px;
+}
