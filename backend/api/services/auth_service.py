@@ -1,4 +1,4 @@
-from database.mongo import db
+from database import mongo
 from api.core.security import verify_password, create_access_token
 
 
@@ -7,7 +7,7 @@ from api.core.security import verify_password, create_access_token
 # -----------------------------
 async def login_user(email: str, password: str):
 
-    user = await db.users.find_one({"email": email})
+    user = await mongo.db.users.find_one({"email": email})
 
     if not user:
         return None

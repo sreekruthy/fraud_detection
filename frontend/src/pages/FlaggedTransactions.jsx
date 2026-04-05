@@ -46,7 +46,7 @@ function FlaggedTransactions() {
                 color = "green";
               } 
               else if (txn.risk_score >= 0.4 && txn.risk_score < 0.7) {
-                status = "Might be Flagged";
+                status = "Suspicious";
                 color = "orange";
               } 
               else {

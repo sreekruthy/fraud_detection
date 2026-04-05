@@ -3,9 +3,10 @@ from dotenv import load_dotenv
 import os
 
 # Load .env file
-load_dotenv("api/.env")
+load_dotenv()
 
 MONGO_URL = os.getenv("MONGO_URL")
+DATABASE_NAME = os.getenv("DATABASE_NAME")
 
 client = None
 db = None
@@ -14,7 +15,7 @@ db = None
 async def connect_to_mongo():
     global client, db
     client = AsyncIOMotorClient(MONGO_URL)
-    db = client["fraud_detection"]
+    db = client[DATABASE_NAME]
     print("✅ MongoDB Connected")
 
 
