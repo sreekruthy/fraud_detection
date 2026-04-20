@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from app.schemas.feedback_schema import FeedbackCreate
-from app.services.feedback_service import store_feedback
+from api.schemas.feedback_schema import FeedbackCreate
+from api.services.feedback_service import store_feedback
 
 router = APIRouter(prefix="/api/feedback", tags=["Feedback"])
 
