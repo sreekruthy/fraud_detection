@@ -1,4 +1,4 @@
-from app.db.mongo import db
+from database.db.mongo import db
 from datetime import datetime
 
 
