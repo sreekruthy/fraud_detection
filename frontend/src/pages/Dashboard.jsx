@@ -1,83 +1,59 @@
-import Navbar from "../components/Navbar";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-import { useState, useEffect } from "react";
 
 function Dashboard() {
 
-  const transactions = [
-    { id: "TXN001", risk_score: 0.91 },
-    { id: "TXN002", risk_score: 0.67 },
-    { id: "TXN003", risk_score: 0.29 }
-  ];
-
-  const [alert, setAlert] = useState(null);
-
-  useEffect(() => {
-    const risky = transactions.find(t => t.risk_score >= 0.4);
-
-    if (risky) {
-      setAlert(risky);
-    }
-  }, []);
-
-  const closeAlert = () => {
-    setAlert(null);
-  };
+  const navigate = useNavigate();
 
   return (
-    <div style={{ display: "flex" }}>
+    <div style={{ display: "flex" }}> {/* ✅ layout */}
 
+      {/* ✅ Sidebar */}
       <Sidebar />
 
-      <div style={{ flex: 1 }}>
-        <Navbar />
+      {/* ✅ Main Content */}
+      <div style={{ flex: 1, padding: "40px" }}>
 
-        <div style={{ padding: "20px" }}>
-          <h2>Dashboard</h2>
+        <h2>Fraud Detection Dashboard</h2>
+
+        {/* 🔹 Navigation Buttons */}
+        <div style={{ marginTop: "30px" }}>
+
+
+          <button
+            onClick={() => navigate("/transaction/TXN001")}
+            style={{
+              padding: "12px 20px",
+              backgroundColor: "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer"
+            }}
+          >
+            View Sample Transaction
+          </button>
+
         </div>
 
-        {/* 🔥 Popup Alert */}
-        {alert && (
-          <div style={{
-            position: "fixed",
-            top: "20px",
-            right: "20px",
-            background: alert.risk_score >= 0.7 ? "#fee2e2" : "#fef3c7",
-            padding: "15px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
-            width: "250px"
-          }}>
+        {/* 🔹 Info Section */}
+        <div style={{
+          marginTop: "40px",
+          padding: "20px",
+          background: "white",
+          width: "400px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+        }}>
 
-            <strong>
-              {alert.risk_score >= 0.7 
-                ? "🚨 Flagged Transaction" 
-                : "⚠ Suspicious Transaction"}
-            </strong>
+          <h3>System Overview</h3>
+          <p>✔ Real-time fraud detection</p>
+          <p>✔ Risk scoring using rules / ML</p>
+          <p>✔ Flagged transaction monitoring</p>
+          <p>✔ MongoDB + FastAPI + React</p>
 
-            <p>Transaction: {alert.id}</p>
-            <p>Risk Score: {alert.risk_score}</p>
-
-            <button
-              onClick={closeAlert}
-              style={{
-                marginTop: "10px",
-                padding: "6px 10px",
-                border: "none",
-                background: "#333",
-                color: "white",
-                borderRadius: "4px",
-                cursor: "pointer"
-              }}
-            >
-              Close
-            </button>
-
-          </div>
-        )}
+        </div>
 
       </div>
-
     </div>
   );
 }
