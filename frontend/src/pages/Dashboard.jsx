@@ -36,23 +36,6 @@ function Dashboard() {
 
         </div>
 
-        {/* 🔹 Info Section */}
-        <div style={{
-          marginTop: "40px",
-          padding: "20px",
-          background: "white",
-          width: "400px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-        }}>
-
-          <h3>System Overview</h3>
-          <p>✔ Real-time fraud detection</p>
-          <p>✔ Risk scoring using rules / ML</p>
-          <p>✔ Flagged transaction monitoring</p>
-          <p>✔ MongoDB + FastAPI + React</p>
-
-        </div>
-
       </div>
     </div>
   );
