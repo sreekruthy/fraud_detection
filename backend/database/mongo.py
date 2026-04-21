@@ -3,7 +3,11 @@ from dotenv import load_dotenv
 import os
 
 # Load .env file
-load_dotenv()
+from pathlib import Path
+from dotenv import load_dotenv
+
+env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 MONGO_URL = os.getenv("MONGO_URL")
 DATABASE_NAME = os.getenv("DATABASE_NAME")
@@ -24,3 +28,4 @@ async def close_mongo_connection():
     if client:
         client.close()
         print("❌ MongoDB connection closed")
+

@@ -25,3 +25,16 @@ body{
   font-weight:bold;
   margin-top:5px;
 }
+
+.sidebar-link {
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: white;
+  text-decoration: none;
+  display: block;
+  transition: 0.2s;
+}
+
+.sidebar-link:hover {
+  background: #1f2937;
+}

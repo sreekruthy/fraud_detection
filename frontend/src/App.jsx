@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
 import FlaggedTransactions from "./pages/FlaggedTransactions"
+import Transaction from "./pages/Transaction";
+
 
 function App() {
   return (
@@ -10,6 +12,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/flagged" element={<FlaggedTransactions />} />
+        <Route path="/transaction/:id" element={<Transaction />} />
       </Routes>
     </BrowserRouter>
   )
