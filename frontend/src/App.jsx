@@ -4,7 +4,6 @@ import Dashboard from "./pages/Dashboard"
 import FlaggedTransactions from "./pages/FlaggedTransactions"
 import Transaction from "./pages/Transaction";
 
-
 function App() {
   return (
     <BrowserRouter>

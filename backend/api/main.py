@@ -12,7 +12,7 @@ from database.mongo import connect_to_mongo, close_mongo_connection
 # Create FastAPI Application
 # ---------------------------------------------------
 app = FastAPI(
-    title="Intelligent Fraud Detection System API",
+    title="Fraud Detection System API",
     description="Backend API for Fraud Detection System",
     version="1.0.0"
 )
@@ -22,8 +22,8 @@ app = FastAPI(
 # CORS Configuration (for frontend integration)
 # ---------------------------------------------------
 origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000"
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
 ]
 
 app.add_middleware(
