@@ -1,23 +1,45 @@
-from database.mongo import db
+"""
+api/services/alert_service.py  (Main Backend layer)
+-----------------------------------------------------
+Reads alerts from MongoDB and exposes them to the API routers.
+This is the backend-side service (not the ML-layer one).
+The ML layer creates alerts; this layer reads + resolves them.
+"""
+
+from database import mongo
 from datetime import datetime, timezone
 
 
 async def get_alerts(status: str | None = None) -> list[dict]:
+    """
+    Fetch alerts, optionally filtered by status.
+    Called by /api/alerts/ and /api/alerts/open endpoints.
+
+    status: "OPEN" | "RESOLVED" | None (returns all)
+    """
     query = {}
     if status:
         query["status"] = status
 
     alerts = []
-    async for alert in db.alerts.find(query, {"_id": 0}).sort("created_at", -1):
-        for f in ("created_at", "updated_at", "hold_expires_at"):
-            if f in alert and hasattr(alert[f], "isoformat"):
-                alert[f] = alert[f].isoformat()
+    cursor = mongo.db.alerts.find(query, {"_id": 0}).sort("created_at", -1)
+
+    async for alert in cursor:
+        # Serialize datetime fields
+        for field in ("created_at", "updated_at", "hold_expires_at"):
+            if field in alert and hasattr(alert[field], "isoformat"):
+                alert[field] = alert[field].isoformat()
         alerts.append(alert)
+
     return alerts
 
 
 async def resolve_alert(transaction_id: str, admin_action: str) -> bool:
-    result = await db.alerts.update_one(
+    """
+    Resolve an open alert after admin or user action.
+    Returns True if an alert was found and updated.
+    """
+    result = await mongo.db.alerts.update_one(
         {"transaction_id": transaction_id, "status": "OPEN"},
         {"$set": {
             "status":       "RESOLVED",
