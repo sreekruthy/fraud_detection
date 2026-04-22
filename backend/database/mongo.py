@@ -4,7 +4,6 @@ import os
 
 # Load .env file
 from pathlib import Path
-from dotenv import load_dotenv
 
 env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
@@ -29,3 +28,5 @@ async def close_mongo_connection():
         client.close()
         print("❌ MongoDB connection closed")
 
+print("MONGO_URL:", MONGO_URL)
+print("DB:", DATABASE_NAME)

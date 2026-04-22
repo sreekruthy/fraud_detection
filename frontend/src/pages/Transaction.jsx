@@ -1,43 +1,26 @@
-<<<<<<< HEAD
 import { useParams, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-=======
-import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../api/axiosConfig.js";
->>>>>>> a7528d0 (alert service added)
+
 
 function Transaction() {
 
   const { id } = useParams();
-<<<<<<< HEAD
+
   const navigate = useNavigate();
-
-  return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-
-      {/* ✅ Sidebar */}
-      <Sidebar />
-
-      {/* ✅ Main Content */}
-      <div style={{ padding: "30px", flex: 1 }}>
-
-        <h2>Transaction Details</h2>
-        <p><strong>ID:</strong> {id}</p>
-=======
   const [transaction, setTransaction] = useState(null);
 
-  useEffect(() => {
+useEffect(() => {
     api.get(`/api/transactions/${id}`)
       .then(res => setTransaction(res.data.transaction))
       .catch(err => console.log(err));
   }, [id]);
 
-  if (!transaction) {
+   if (!transaction) {
     return <h3>Loading...</h3>;
   }
-
-  let status = "";
+let status = "";
   let color = "";
 
   if (transaction.risk_score < 0.4) {
@@ -53,10 +36,17 @@ function Transaction() {
     color = "red";
   }
 
-  return (
-    <div style={{ padding: "40px" }}>
-      <h2>Transaction Details</h2>
 
+  return (
+    <div style={{ display: "flex", minHeight: "100vh" }}>
+
+      {/* ✅ Sidebar */}
+      <Sidebar />
+
+      {/* ✅ Main Content */}
+      <div style={{ padding: "30px", flex: 1 }}>
+
+        <h2>Transaction Details</h2>
       <div style={{
         marginTop: "20px",
         padding: "20px",
@@ -79,9 +69,9 @@ function Transaction() {
 
         <p><b>Location:</b> {transaction.location}</p>
         <p><b>Time:</b> {transaction.time}</p>
->>>>>>> a7528d0 (alert service added)
 
       </div>
+    </div>
     </div>
   );
 }
