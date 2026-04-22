@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../api/axiosConfig.js";
 
 // ── Countdown hook ────────────────────────────────────────────────────────────
