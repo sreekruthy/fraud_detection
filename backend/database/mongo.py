@@ -27,5 +27,8 @@ async def close_mongo_connection():
         client.close()
         print("❌ MongoDB connection closed")
 
-print("MONGO_URL:", MONGO_URL)
+if MONGO_URL:
+    print("MONGO_URL: configured")
+else:
+    print("MONGO_URL: missing")
 print("DB:", DATABASE_NAME)
