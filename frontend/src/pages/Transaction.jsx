@@ -1,77 +1,79 @@
-import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import Sidebar from "../components/Sidebar";
+import { useEffect, useState } from "react";
+import api from "../api/axiosConfig.js";
 
-function Dashboard() {
 
-  const transactions = [
-    { id: "TXN001", risk_score: 0.91 },
-    { id: "TXN002", risk_score: 0.67 },
-    { id: "TXN003", risk_score: 0.29 }
-  ];
+function Transaction() {
 
-  const [alert, setAlert] = useState(null);
+  const { id } = useParams();
 
-  useEffect(() => {
+  const navigate = useNavigate();
+  const [transaction, setTransaction] = useState(null);
 
-    const risky = transactions.find(t => t.risk_score >= 0.4);
+useEffect(() => {
+    api.get(`/api/transactions/${id}`)
+      .then(res => setTransaction(res.data.transaction))
+      .catch(err => console.log(err));
+  }, [id]);
 
-    if (risky) {
-      setAlert(risky);
-    }
+   if (!transaction) {
+    return <h3>Loading...</h3>;
+  }
+let status = "";
+  let color = "";
 
-  }, []);
+  if (transaction.risk_score < 0.4) {
+    status = "Safe";
+    color = "green";
+  } 
+  else if (transaction.risk_score < 0.7) {
+    status = "Might be Flagged";
+    color = "orange";
+  } 
+  else {
+    status = "Flagged";
+    color = "red";
+  }
 
-  const closeAlert = () => {
-    setAlert(null);
-  };
 
   return (
+    <div style={{ display: "flex", minHeight: "100vh" }}>
 
-    <div style={{padding:"30px"}}>
+      {/* ✅ Sidebar */}
+      <Sidebar />
 
-      <h2>Admin Dashboard</h2>
+      {/* ✅ Main Content */}
+      <div style={{ padding: "30px", flex: 1 }}>
 
-      {alert && (
+        <h2>Transaction Details</h2>
+      <div style={{
+        marginTop: "20px",
+        padding: "20px",
+        background: "white",
+        width: "400px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+      }}>
 
-        <div style={{
-          position:"fixed",
-          top:"20px",
-          right:"20px",
-          background: alert.risk_score >= 0.7 ? "#fee2e2" : "#fef3c7",
-          padding:"15px",
-          borderRadius:"8px",
-          boxShadow:"0 2px 10px rgba(0,0,0,0.2)",
-          width:"250px"
-        }}>
+        <p><b>Transaction ID:</b> {transaction.id}</p>
+        <p><b>User:</b> {transaction.user}</p>
+        <p><b>Amount:</b> {transaction.amount}</p>
+        <p><b>Risk Score:</b> {transaction.risk_score}</p>
 
-          <strong>
-            {alert.risk_score >= 0.7 ? "🚨 Flagged Transaction" : "⚠ Suspicious Transaction"}
-          </strong>
+        <p>
+          <b>Status:</b>
+          <span style={{ color: color, marginLeft: "10px" }}>
+            {status}
+          </span>
+        </p>
 
-          <p>Transaction: {alert.id}</p>
-          <p>Risk Score: {alert.risk_score}</p>
+        <p><b>Location:</b> {transaction.location}</p>
+        <p><b>Time:</b> {transaction.time}</p>
 
-          <button
-            onClick={closeAlert}
-            style={{
-              marginTop:"10px",
-              padding:"6px 10px",
-              border:"none",
-              background:"#333",
-              color:"white",
-              borderRadius:"4px",
-              cursor:"pointer"
-            }}
-          >
-            Close
-          </button>
-
-        </div>
-
-      )}
-
+      </div>
     </div>
-
+    </div>
   );
 }
 
-export default Dashboard;
+export default Transaction;
