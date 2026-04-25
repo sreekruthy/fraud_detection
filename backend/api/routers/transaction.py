@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from api.schemas.transaction_schema import TransactionCreate
 from api.services.transaction_service import create_transaction, get_transaction
 from api.core.dependencies import get_current_user
-from api.utils.logger import log_transaction, log_unauthorized_access
+from api.utils.logger import log_transaction
 
 router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
 
