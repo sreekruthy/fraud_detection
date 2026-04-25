@@ -19,16 +19,11 @@ app = FastAPI(
 
 
 # ---------------------------------------------------
-# CORS Configuration (for frontend integration)
+# CORS Configuration (for frontend)
 # ---------------------------------------------------
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000"
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change to origins list in production
+    allow_origins=["*"],   # allow all (OK for development)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,12 +47,12 @@ async def shutdown_db_client():
 
 
 # ---------------------------------------------------
-# Include Routers
+# Include Routers (IMPORTANT: prefixes added)
 # ---------------------------------------------------
-app.include_router(transaction.router)
-app.include_router(alerts.router)
-app.include_router(auth.router)
-app.include_router(feedback.router)
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(transaction.router, prefix="/api/transactions", tags=["Transactions"])
+app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
+app.include_router(feedback.router, prefix="/api/feedback", tags=["Feedback"])
 
 
 # ---------------------------------------------------
