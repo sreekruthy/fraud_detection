@@ -36,6 +36,6 @@ async def resolve_alert(transaction_id: str, admin_action: str) -> bool:
             "status":       "RESOLVED",
             "admin_action": admin_action,
             "updated_at":   datetime.now(timezone.utc),
+        }}
     )
     return result.modified_count > 0
->>>>>>> origin/main

@@ -21,13 +21,14 @@ Admin action endpoint:
   - Admin sees user history summary and makes PERMIT or BLOCK decision
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from datetime import datetime, timezone
 import jwt
 import os
 
 from database import mongo
+from api.core.dependencies import require_role
 from api.services.alert_service import resolve_alert
 
 router = APIRouter(prefix="/api/feedback", tags=["Feedback"])
@@ -59,6 +60,12 @@ def decode_token(token: str) -> dict:
 
 @router.get("/verify")
 async def get_verify_info(token: str = Query(...)):
+    payload = decode_token(token)
+    txn_id = payload.get("transaction_id")
+    purpose = payload.get("purpose", "suspicious_verify")
+    if not txn_id:
+        raise HTTPException(status_code=400, detail="Invalid verification link.")
+
     txn = await mongo.db.transactions.find_one({"transaction_id": txn_id}, {"_id": 0})
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found.")
@@ -98,6 +105,12 @@ async def user_respond(
     token:    str = Query(...),
     response: str = Query(...),
 ):
+    payload = decode_token(token)
+    txn_id = payload.get("transaction_id")
+    purpose = payload.get("purpose", "suspicious_verify")
+    if not txn_id:
+        raise HTTPException(status_code=400, detail="Invalid verification link.")
+
     if response not in ("legitimate", "fraud"):
         raise HTTPException(status_code=400, detail="Response must be 'legitimate' or 'fraud'.")
 
@@ -181,7 +194,10 @@ async def user_respond(
 # ── POST /admin-action — admin PERMIT or BLOCK (SUSPICIOUS only) ──────────────
 
 @router.post("/admin-action")
-async def admin_action(action_data: AdminAction):
+async def admin_action(
+    action_data: AdminAction,
+    _current_user=Depends(require_role("admin"))
+):
     """
     Admin manually decides on a SUSPICIOUS transaction.
     Called when:
@@ -220,7 +236,11 @@ async def admin_action(action_data: AdminAction):
 
 
 # ── POST /analyst — analyst manual review ────────────────────────────────────
-
+@router.post("/analyst")
+async def analyst_feedback(
+    feedback: AnalystFeedback,
+    _current_user=Depends(require_role("analyst"))
+):
     txn = await mongo.db.transactions.find_one({"transaction_id": feedback.transaction_id})
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found.")
