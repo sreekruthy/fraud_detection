@@ -2,17 +2,16 @@
 main.py
 -------
 Entry point. Keeps FastAPI routing clean and thin.
-All logic lives in app/services/transaction_service.py.
-
+All logic lives in app/services/transaction_service.py
 Run with:
-    uvicorn main:app --reload
+    uvicorn main:app --reload --port 8000
 """
 
+import traceback
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-
 from app.services.transaction_service import create_transaction
 
 # ── App ───────────────────────────────────────────────────────────────────────
@@ -23,7 +22,6 @@ app = FastAPI(
 )
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
-
 class Location(BaseModel):
     city:      str
     country:   str
@@ -47,7 +45,6 @@ class TransactionRequest(BaseModel):
     user_home_city: Optional[str] = "New York"
 
 # ── Routes ────────────────────────────────────────────────────────────────────
-
 @app.post("/transaction")
 async def evaluate_transaction(request: TransactionRequest):
     """
@@ -58,6 +55,7 @@ async def evaluate_transaction(request: TransactionRequest):
         result = await create_transaction(request.model_dump())
         return result
     except Exception as e:
+        traceback.print_exc()   # prints full stacktrace to uvicorn terminal
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")

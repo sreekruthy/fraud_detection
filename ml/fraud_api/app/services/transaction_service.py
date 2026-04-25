@@ -175,10 +175,20 @@ async def get_user_history_summary(user_id: str) -> dict:
 
 async def create_transaction(transaction_data: dict) -> dict:
 
-    if isinstance(transaction_data.get("timestamp"), str):
-        transaction_data["timestamp"] = datetime.fromisoformat(
-            transaction_data["timestamp"]
-        )
+    # FIX: Parse the timestamp and ALWAYS ensure it is UTC-aware.
+    # Pydantic's model_dump() may return a tz-aware datetime (if the client
+    # sent an ISO string with offset, e.g. "2026-04-25T10:00:00+00:00").
+    # MongoDB returns naive UTC datetimes for history records.
+    # By normalizing here to UTC-aware, rule_engine comparisons are safe.
+    ts = transaction_data.get("timestamp")
+    if isinstance(ts, str):
+        ts = datetime.fromisoformat(ts)
+    if isinstance(ts, datetime):
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)   # naive → assume UTC
+        else:
+            ts = ts.astimezone(timezone.utc)        # any offset → UTC
+    transaction_data["timestamp"] = ts
 
     # ── Scores ────────────────────────────────────────────────────────────────
     user_history = await db.transactions.find(

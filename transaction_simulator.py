@@ -90,6 +90,9 @@ FRAUD_LOCATIONS = [
 BROWSERS     = ["Chrome", "Firefox", "Safari", "Edge"]
 RECEIVER_IDS = [f"RCV_{i:03d}" for i in range(1, 20)]
 
+# How many consecutive connection errors before giving up entirely
+MAX_CONSECUTIVE_CONNECT_ERRORS = 5
+
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -184,17 +187,25 @@ def make_fraud_txn(user):
 # ── Send one transaction to ML API ────────────────────────────────────────────
 
 async def send_txn(http: httpx.AsyncClient, txn: dict):
+    """
+    Returns (result_dict_or_None, is_connect_error).
+    is_connect_error=True means the server is unreachable (abort-worthy).
+    is_connect_error=False means the server returned a 500 (skip and continue).
+    """
     try:
         res = await http.post(ML_API, json=txn, timeout=15.0)
         res.raise_for_status()
-        return res.json()
+        return res.json(), False
     except httpx.ConnectError:
         print(f"\n❌ Cannot connect to ML API at {ML_API}")
         print("   Make sure you ran: cd ml/fraud_api && uvicorn main:app --reload --port 8000")
-        return None
+        return None, True          # ← connection error: counts toward abort
+    except httpx.HTTPStatusError as e:
+        print(f"    ⚠️  HTTP {e.response.status_code} — skipping this transaction")
+        return None, False         # ← server-side error: just skip, keep going
     except Exception as e:
-        print(f"    ❌ Error: {e}")
-        return None
+        print(f"    ⚠️  Unexpected error: {e} — skipping")
+        return None, False
 
 
 # ── Main simulation ────────────────────────────────────────────────────────────
@@ -213,9 +224,14 @@ async def run_simulation(total: int = 30):
         [(u, "fraud")      for u in USER_POOL[:4]] * 2
     )
     random.shuffle(patterns)
+
+    # Extend or trim the pool to exactly `total` entries
+    while len(patterns) < total:
+        patterns += patterns
     patterns = patterns[:total]
 
     counts = {"LEGITIMATE": 0, "SUSPICIOUS": 0, "FRAUD": 0, "error": 0}
+    consecutive_connect_errors = 0
 
     async with httpx.AsyncClient() as http:
         for i, (user, ptype) in enumerate(patterns, 1):
@@ -228,19 +244,24 @@ async def run_simulation(total: int = 30):
                   f"{txn['location']['city']}, {txn['location']['country']}", end="  →  ")
             sys.stdout.flush()
 
-            result = await send_txn(http, txn)
+            result, is_connect_err = await send_txn(http, txn)
+
             if result:
                 decision = result.get("decision", "?")
                 score    = result.get("final_score", 0)
                 status   = result.get("txn_status", "")
                 print(f"{decision} ({score:.2f})  [{status}]")
                 counts[decision] = counts.get(decision, 0) + 1
+                consecutive_connect_errors = 0   # reset on success
             else:
                 print("ERROR")
                 counts["error"] += 1
-                if counts["error"] >= 3:
-                    print("\n⛔ Too many errors in a row — aborting.")
-                    break
+                if is_connect_err:
+                    consecutive_connect_errors += 1
+                    if consecutive_connect_errors >= MAX_CONSECUTIVE_CONNECT_ERRORS:
+                        print(f"\n⛔ API unreachable for {MAX_CONSECUTIVE_CONNECT_ERRORS} requests in a row — aborting.")
+                        break
+                # Non-connection errors (500s) just get skipped; simulation continues
 
             await asyncio.sleep(0.4)
 

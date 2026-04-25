@@ -1,10 +1,43 @@
+"""
+app/services/email_service.py
+------------------------------
+Two distinct email types with fundamentally different messaging:
+
+send_suspicious_email():
+  - Orange HIGH RISK banner
+  - "This transaction is ON HOLD"
+  - Shows live 2-minute countdown timer (CSS animation)
+  - "Please respond within 2 minutes — your transaction will be held"
+  - Two buttons: "Yes, this was me" / "No, this wasn't me"
+  - If no response in 2 min → admin decides using your history
+
+send_fraud_email():
+  - Red CRITICAL banner
+  - "Your transaction has been BLOCKED"
+  - Shows all fraud signals (triggered rules, scores, top features)
+  - "Was this actually you?"
+  - If YES → "Please redo your transaction — this one cannot be unblocked"
+  - If NO  → "Thank you for confirming. Your account is being reviewed."
+  - Response is for records/retraining ONLY, does not unblock
+
+SMTP: Uses MailHog locally (localhost:1025), view at http://localhost:8025
+
+FIX: Replaced `import jwt` with `import PyJWT as jwt` — avoids conflict with
+     the bare `jwt` package on PyPI which lacks `.encode()`.
+"""
+
 import os
-import jwt
 import aiosmtplib
 from datetime import datetime, timezone, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
+
+# ── JWT import — works with PyJWT 1.x and 2.x ────────────────────────────────
+try:
+    import PyJWT as pyjwt           # explicit import avoids the bare `jwt` package
+except ImportError:
+    import jwt as pyjwt             # fallback: hope it's PyJWT and not the other one
 
 load_dotenv()
 
@@ -24,7 +57,9 @@ def _build_token(transaction_id: str, purpose: str, expires_in_seconds: int = 86
         "purpose":        purpose,
         "exp":            datetime.now(timezone.utc) + timedelta(seconds=expires_in_seconds),
     }
-    return jwt.encode(payload, FEEDBACK_SECRET, algorithm="HS256")
+    token = pyjwt.encode(payload, FEEDBACK_SECRET, algorithm="HS256")
+    # PyJWT 2.x returns str; PyJWT 1.x returns bytes — normalise to str
+    return token if isinstance(token, str) else token.decode("utf-8")
 
 
 async def _send(to_email: str, subject: str, html: str):
@@ -63,11 +98,11 @@ async def send_suspicious_email(
     yes_url = f"{FRONTEND_URL}/verify?token={token}&response=legitimate"
     no_url  = f"{FRONTEND_URL}/verify?token={token}&response=fraud"
 
-    city    = location.get("city", "Unknown")
-    country = location.get("country", "")
-    ts_str  = timestamp.strftime("%B %d, %Y at %I:%M %p UTC") if isinstance(timestamp, datetime) else str(timestamp)
+    city      = location.get("city", "Unknown")
+    country   = location.get("country", "")
+    ts_str    = timestamp.strftime("%B %d, %Y at %I:%M %p UTC") if isinstance(timestamp, datetime) else str(timestamp)
     score_pct = int(final_score * 100)
-    mins    = response_window_seconds // 60
+    mins      = response_window_seconds // 60
 
     triggered_html = "".join(
         f'<li style="margin:5px 0;color:#92400e;">{r}</li>'

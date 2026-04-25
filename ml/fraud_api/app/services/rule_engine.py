@@ -13,9 +13,27 @@ Each rule contributes 1 point. Final score = points / 3 (range: 0.0 – 1.0)
 
 import math
 import statistics
-from datetime import timedelta
+from datetime import datetime, timezone, timedelta
 
 TIME_WINDOW_DAYS = 30
+
+
+def _to_utc(dt) -> datetime:
+    """
+    Normalize any datetime to UTC-aware.
+    - Already UTC-aware  → returned as-is
+    - Offset-aware (non-UTC) → converted to UTC
+    - Naive (no tzinfo)  → assumed UTC, made aware
+    """
+    if dt is None:
+        return dt
+    if not isinstance(dt, datetime):
+        return dt
+    if dt.tzinfo is None:
+        # MongoDB stores naive UTC datetimes — treat as UTC
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
 
 # ── Haversine distance ────────────────────────────────────────────────────────
 
@@ -44,14 +62,17 @@ def compute_rule_score(transaction: dict, user_history: list) -> float:
     score     = 0
     max_score = 3
 
-    now = transaction.get("timestamp")
+    # FIX: Normalize the incoming transaction timestamp to UTC-aware.
+    # Pydantic parses ISO strings with timezone info as offset-aware datetimes,
+    # while MongoDB returns naive UTC datetimes — mixing them causes TypeError.
+    now = _to_utc(transaction.get("timestamp"))
     if not now:
         return 0.0
 
-    # Filter to last 30 days only
+    # Filter to last 30 days only — normalize each history timestamp before comparing
     recent_history = [
         t for t in user_history
-        if now - t["timestamp"] <= timedelta(days=TIME_WINDOW_DAYS)
+        if now - _to_utc(t["timestamp"]) <= timedelta(days=TIME_WINDOW_DAYS)
     ]
 
     # If no history exists yet, we can't compute anomalies — return 0
@@ -91,8 +112,8 @@ def compute_rule_score(transaction: dict, user_history: list) -> float:
     # ── Rule 3: Time anomaly ──────────────────────────────────────────────────
     # If this transaction's hour is more than 6 hours away from the user's
     # average transaction hour, it's happening at an unusual time.
-    txn_hour   = transaction["timestamp"].hour
-    past_hours = [t["timestamp"].hour for t in recent_history]
+    txn_hour   = now.hour
+    past_hours = [_to_utc(t["timestamp"]).hour for t in recent_history]
     avg_hour   = statistics.mean(past_hours)
     if abs(txn_hour - avg_hour) > 6:
         score += 1
