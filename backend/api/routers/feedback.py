@@ -24,8 +24,13 @@ Admin action endpoint:
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from datetime import datetime, timezone
-import jwt
 import os
+
+# ── FIX: use PyJWT explicitly — the bare `jwt` package has no .decode() ──────
+try:
+    import PyJWT as jwt
+except ImportError:
+    import jwt  # fallback — only works if this is actually PyJWT
 
 from database import mongo
 from api.core.dependencies import require_role
@@ -61,7 +66,7 @@ def decode_token(token: str) -> dict:
 @router.get("/verify")
 async def get_verify_info(token: str = Query(...)):
     payload = decode_token(token)
-    txn_id = payload.get("transaction_id")
+    txn_id  = payload.get("transaction_id")
     purpose = payload.get("purpose", "suspicious_verify")
     if not txn_id:
         raise HTTPException(status_code=400, detail="Invalid verification link.")
@@ -70,11 +75,14 @@ async def get_verify_info(token: str = Query(...)):
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found.")
 
-    # Serialize datetime
+    # Serialize datetime fields so they can be returned as JSON
     for f in ("timestamp", "created_at", "hold_expires_at", "feedback_received_at"):
         if f in txn and hasattr(txn[f], "isoformat"):
-            txn[f] = txn[f].isoformat()
-
+            dt = txn[f]
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            txn[f] = dt.isoformat()
+    # Already responded — don't show verify buttons again
     if txn.get("customer_feedback") is not None:
         return {
             "already_responded": True,
@@ -98,7 +106,7 @@ async def get_verify_info(token: str = Query(...)):
     }
 
 
-# ── POST /respond — user clicks email button ──────────────────────────────────
+# ── POST /respond — user clicks Yes/No button in email ───────────────────────
 
 @router.post("/respond")
 async def user_respond(
@@ -106,7 +114,7 @@ async def user_respond(
     response: str = Query(...),
 ):
     payload = decode_token(token)
-    txn_id = payload.get("transaction_id")
+    txn_id  = payload.get("transaction_id")
     purpose = payload.get("purpose", "suspicious_verify")
     if not txn_id:
         raise HTTPException(status_code=400, detail="Invalid verification link.")
@@ -130,7 +138,7 @@ async def user_respond(
     now = datetime.now(timezone.utc)
 
     # ── SUSPICIOUS response ───────────────────────────────────────────────────
-    # User responded → their answer determines txn_status
+    # User's answer directly determines the transaction outcome
     if purpose == "suspicious_verify" or txn.get("decision") == "SUSPICIOUS":
         new_status   = "CONFIRMED_LEGIT" if response == "legitimate" else "BLOCKED"
         admin_action = "PERMIT_USER_CONFIRMED" if response == "legitimate" else "BLOCK_USER_CONFIRMED"
@@ -154,20 +162,21 @@ async def user_respond(
             "message": (
                 "Your transaction has been confirmed and will be processed."
                 if response == "legitimate"
-                else "Your transaction has been blocked. Your account is being reviewed."
+                else
+                "Your transaction has been blocked. Your account is being reviewed."
             ),
         }
 
     # ── FRAUD response ────────────────────────────────────────────────────────
-    # Transaction is already BLOCKED. Response is for retraining only.
-    # txn_status does NOT change.
+    # Transaction is already BLOCKED — this response is for retraining only.
+    # txn_status does NOT change, no matter what user says.
     elif purpose == "fraud_feedback" or txn.get("decision") == "FRAUD":
         await mongo.db.transactions.update_one(
             {"transaction_id": txn_id},
             {"$set": {
                 "customer_feedback":    response,
                 "feedback_received_at": now,
-                # txn_status stays BLOCKED — response is informational only
+                # txn_status intentionally NOT updated — block is permanent
             }}
         )
 
@@ -175,7 +184,7 @@ async def user_respond(
             "already_responded": False,
             "decision":          "FRAUD",
             "feedback":          response,
-            "txn_status":        "BLOCKED",   # unchanged
+            "txn_status":        "BLOCKED",
             "transaction_id":    txn_id,
             "message": (
                 "Thank you for confirming. This transaction has been blocked. "
@@ -187,22 +196,21 @@ async def user_respond(
             ),
         }
 
-    # Fallback
     return {"message": "Response recorded.", "transaction_id": txn_id}
 
 
-# ── POST /admin-action — admin PERMIT or BLOCK (SUSPICIOUS only) ──────────────
+# ── POST /admin-action — admin manually decides on a SUSPICIOUS transaction ───
 
 @router.post("/admin-action")
 async def admin_action(
-    action_data: AdminAction,
+    action_data:   AdminAction,
     _current_user=Depends(require_role("admin"))
 ):
     """
-    Admin manually decides on a SUSPICIOUS transaction.
-    Called when:
-      - Admin proactively acts from dashboard
-      - OR the 2-minute user window has expired and user didn't respond
+    Admin manually PERMIT or BLOCK a SUSPICIOUS transaction.
+    Used when:
+      - Admin acts proactively from the dashboard
+      - OR the 5-minute user window expired with no response
     NOT used for FRAUD — those are auto-blocked.
     """
     txn = await mongo.db.transactions.find_one({"transaction_id": action_data.transaction_id})
@@ -236,9 +244,10 @@ async def admin_action(
 
 
 # ── POST /analyst — analyst manual review ────────────────────────────────────
+
 @router.post("/analyst")
 async def analyst_feedback(
-    feedback: AnalystFeedback,
+    feedback:      AnalystFeedback,
     _current_user=Depends(require_role("analyst"))
 ):
     txn = await mongo.db.transactions.find_one({"transaction_id": feedback.transaction_id})
@@ -260,7 +269,9 @@ async def analyst_feedback(
         {"transaction_id": feedback.transaction_id},
         {"$set": update}
     )
-    admin_action = "PERMIT_ANALYST" if feedback.analyst_decision == "LEGITIMATE" else "BLOCK_ANALYST"
+    admin_action = (
+        "PERMIT_ANALYST" if feedback.analyst_decision == "LEGITIMATE" else "BLOCK_ANALYST"
+    )
     await resolve_alert(feedback.transaction_id, admin_action)
 
     return {

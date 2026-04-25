@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  mailhog:
+    image: mailhog/mailhog
+    container_name: fraud_mailhog
+    ports:
+      - "1025:1025"   # SMTP — your Python code sends emails here
+      - "8025:8025"   # Web UI — open this in browser to see caught emails
+    restart: unless-stopped

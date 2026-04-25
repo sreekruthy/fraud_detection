@@ -53,7 +53,7 @@ HOME_CITY_LOOKUP = {
 }
 
 # User gets 2 minutes to respond to a SUSPICIOUS email
-SUSPICIOUS_WINDOW_SECONDS = 120
+SUSPICIOUS_WINDOW_SECONDS = 300
 
 
 # ── Feature helpers ───────────────────────────────────────────────────────────
