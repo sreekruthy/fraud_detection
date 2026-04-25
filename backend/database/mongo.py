@@ -1,9 +1,9 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
-import os
 from pathlib import Path
+import os
 
-# Load .env file from project root
+# Load .env file from parent directory
 env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
@@ -35,3 +35,6 @@ async def close_mongo_connection():
     if client:
         client.close()
         print("❌ MongoDB connection closed")
+
+print("MONGO_URL:", MONGO_URL)
+print("DB:", DATABASE_NAME)

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import api from "../api/axiosConfig";
 import Sidebar from "../components/Sidebar";
 
@@ -8,6 +9,7 @@ function FlaggedTransactions() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
 
   useEffect(() => {
     api.get("/api/transactions/flagged")
@@ -22,15 +24,17 @@ function FlaggedTransactions() {
   }, []);
 
   if (loading) {
-    return (
-      <div style={{ display: "flex", minHeight: "100vh" }}>
-        <Sidebar />
-        <div style={{ padding: "30px", color: "white" }}>
-          <h3>Loading...</h3>
-        </div>
+  return (
+
+    <div style={{ display: "flex", minHeight: "100vh" }}>
+      <Sidebar />
+      <div style={{ padding: "30px" }}>
+        <h3>Loading...</h3>
       </div>
-    );
-  }
+      </div>
+  );
+}
+
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#0f172a" }}>
