@@ -1,11 +1,3 @@
-"""
-api/services/alert_service.py  (Main Backend layer)
------------------------------------------------------
-Reads alerts from MongoDB and exposes them to the API routers.
-This is the backend-side service (not the ML-layer one).
-The ML layer creates alerts; this layer reads + resolves them.
-"""
-
 from database import mongo
 from datetime import datetime, timezone
 
@@ -23,7 +15,6 @@ async def get_alerts(status: str | None = None) -> list[dict]:
 
     alerts = []
     cursor = mongo.db.alerts.find(query, {"_id": 0}).sort("created_at", -1)
-
     async for alert in cursor:
         # Serialize datetime fields
         for field in ("created_at", "updated_at", "hold_expires_at"):

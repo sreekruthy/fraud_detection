@@ -5,22 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routers import transaction, alerts, auth, feedback
 
 # Database connection
-from database.mongo import connect_to_mongo, close_mongo_connection
+from database import mongo
 
-
-# ---------------------------------------------------
-# Create FastAPI Application
-# ---------------------------------------------------
 app = FastAPI(
     title="Fraud Detection System API",
     description="Backend API for Fraud Detection System",
     version="1.0.0"
 )
 
-
-# ---------------------------------------------------
-# CORS Configuration (for frontend integration)
-# ---------------------------------------------------
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173"
@@ -28,41 +20,25 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change to origins list in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
-# ---------------------------------------------------
-# Database Startup Event
-# ---------------------------------------------------
 @app.on_event("startup")
 async def startup_db_client():
-    await connect_to_mongo()
+    await mongo.connect_to_mongo()
 
-
-# ---------------------------------------------------
-# Database Shutdown Event
-# ---------------------------------------------------
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    await close_mongo_connection()
+    await mongo.close_mongo_connection()
 
-
-# ---------------------------------------------------
-# Include Routers
-# ---------------------------------------------------
 app.include_router(transaction.router)
 app.include_router(alerts.router)
 app.include_router(auth.router)
 app.include_router(feedback.router)
 
-
-# ---------------------------------------------------
-# Root Endpoint
-# ---------------------------------------------------
 @app.get("/", tags=["Health Check"])
 async def root():
     return {
