@@ -16,7 +16,7 @@ function App() {
         <Route path="/verify"       element={<VerifyTransaction />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

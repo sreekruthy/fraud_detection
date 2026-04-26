@@ -3,7 +3,7 @@ from api.schemas.auth_schema import LoginRequest, RegisterRequest, TokenResponse
 from api.services.auth_service import login_user, register_user
 from api.utils.logger import log_unauthorized_access
 
-router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+router = APIRouter()
 
 # -----------------------------
 # Login
@@ -33,6 +33,7 @@ async def register(user_data: RegisterRequest):
     if not token:
         raise HTTPException(status_code=400, detail="User already exists")
     return {
-        "access_token": token,
-        "token_type": "bearer"
+        "message": "Login successful",
+        "email": db_user["email"],
+        "role": db_user.get("role", "admin")
     }

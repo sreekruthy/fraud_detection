@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import api from "../api/axiosConfig";
-import Sidebar from "../components/Sidebar"; 
+import Sidebar from "../components/Sidebar";
 
 function FlaggedTransactions() {
 
@@ -14,12 +14,11 @@ function FlaggedTransactions() {
   useEffect(() => {
     api.get("/api/transactions/flagged")
       .then(res => {
-        setTransactions(res.data?.transactions || []);
+        setTransactions(res.data || []);   // ✅ FIXED
         setLoading(false);
       })
       .catch(err => {
-        console.log("API RESPONSE: ", res.data);
-        console.log(err);
+        console.log(err);                  // ✅ FIXED
         setLoading(false);
       });
   }, []);
@@ -38,16 +37,12 @@ function FlaggedTransactions() {
 
 
   return (
-    <div style={{ display: "flex" }}> {/* ✅ layout */}
+    <div style={{ display: "flex", minHeight: "100vh", background: "#0f172a" }}>
 
-      {/* ✅ Sidebar */}
       <Sidebar />
 
-      {/* ✅ Main Content */}
-      <div style={{ flex: 1, padding: "30px" }}>
-
+      <div style={{ flex: 1, padding: "30px", color: "white" }}>
         <h2>Flagged Transactions</h2>
-
 
         {transactions.length === 0 ? (
           <p>No flagged transactions found</p>
@@ -55,11 +50,11 @@ function FlaggedTransactions() {
           <table style={{
             width: "80%",
             borderCollapse: "collapse",
-            background: "white",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+            background: "#1e293b",
+            marginTop: "20px"
           }}>
 
-            <thead style={{ background: "#f1f5f9" }}>
+            <thead style={{ background: "#334155" }}>
               <tr>
                 <th>ID</th>
                 <th>User</th>
@@ -70,34 +65,34 @@ function FlaggedTransactions() {
             </thead>
 
             <tbody>
-              {Array.isArray(transactions) && transactions.map((txn) => {
+              {transactions.map((txn) => {
+
+                const risk = txn.risk_score ?? 0;
 
                 let status = "";
                 let color = "";
 
-                if (txn.risk_score < 0.4) {
+                if (risk < 0.4) {
                   status = "Legitimate";
-                  color = "green";
-                } 
-                else if (txn.risk_score < 0.7) {
+                  color = "#22c55e";
+                } else if (risk < 0.7) {
                   status = "Suspicious";
-                  color = "orange";
-                } 
-                else {
-                  status = "Flagged";
-                  color = "red";
+                  color = "#f59e0b";
+                } else {
+                  status = "Fraud";
+                  color = "#ef4444";
                 }
 
                 return (
                   <tr
-                    key={txn._id}
-                    onClick={() => navigate(`/transaction/${txn._id}`)}
+                    key={txn.transaction_id}   // ✅ FIXED
+                    onClick={() => navigate(`/transaction/${txn.transaction_id}`)} // ✅ FIXED
                     style={{ cursor: "pointer" }}
                   >
-                    <td>{txn._id}</td>
-                    <td>{txn.user}</td>
-                    <td>{txn.amount}</td>
-                    <td>{txn.risk_score}</td>
+                    <td>{txn.transaction_id}</td>
+                    <td>{txn.user_id}</td>
+                    <td>${txn.amount}</td>
+                    <td>{risk}</td>
                     <td style={{ color, fontWeight: "bold" }}>
                       {status}
                     </td>

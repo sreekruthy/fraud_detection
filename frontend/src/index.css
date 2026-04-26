@@ -1,40 +1,60 @@
-body{
-  margin:0;
-  font-family: Arial, Helvetica, sans-serif;
-  background:#f4f6f9;
-}
-
-.container{
-  padding:25px;
-}
-
-.card{
-  background:white;
-  padding:20px;
-  border-radius:10px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.08);
-}
-
-.card-title{
-  font-size:14px;
-  color:#666;
-}
-
-.card-value{
-  font-size:22px;
-  font-weight:bold;
-  margin-top:5px;
-}
-
-.sidebar-link {
-  padding: 10px 12px;
-  border-radius: 6px;
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #0f172a;
   color: white;
-  text-decoration: none;
-  display: block;
-  transition: 0.2s;
 }
 
-.sidebar-link:hover {
-  background: #1f2937;
+/* Smooth rendering */
+* {
+  box-sizing: border-box;
+}
+
+/* Scrollbar (optional but nice) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Table styling (used in flagged page) */
+table {
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 10px;
+  text-align: left;
+}
+
+th {
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+/* Buttons reset */
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Inputs */
+input {
+  font-family: inherit;
+}
+
+/* Utility */
+.container {
+  padding: 20px;
 }
