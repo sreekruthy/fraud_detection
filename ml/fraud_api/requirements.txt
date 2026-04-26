@@ -9,3 +9,5 @@ pandas
 numpy
 xgboost
 lightgbm
+aiosmtplib
+PyJWT
