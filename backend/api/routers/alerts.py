@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from api.services.alert_service import get_alerts, resolve_alert
 from api.core.dependencies import get_current_user, require_role
 
-router = APIRouter(prefix="/api/alerts", tags=["Alerts"])
+router = APIRouter(tags=["Alerts"])
 
 
 class ResolveRequest(BaseModel):

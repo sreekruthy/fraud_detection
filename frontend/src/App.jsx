@@ -3,7 +3,7 @@ import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
 import FlaggedTransactions from "./pages/FlaggedTransactions"
 import Transaction from "./pages/Transaction"
-import VerifyTransaction from "./pages/Verifytransaction"
+import VerifyTransaction from "./pages/VerifyTransaction"
 
 function App() {
   return (

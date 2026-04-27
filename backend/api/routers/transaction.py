@@ -5,7 +5,7 @@ from api.core.dependencies import get_current_user
 from api.utils.logger import log_transaction
 from database import mongo
 
-router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
+router = APIRouter(tags=["Transactions"])
 
 
 def _serialize(txn: dict) -> dict:

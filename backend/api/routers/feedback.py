@@ -36,7 +36,7 @@ from database import mongo
 from api.core.dependencies import require_role
 from api.services.alert_service import resolve_alert
 
-router = APIRouter(prefix="/api/feedback", tags=["Feedback"])
+router = APIRouter(tags=["Feedback"])
 
 FEEDBACK_SECRET = os.getenv("FEEDBACK_JWT_SECRET", "feedbacksecretkey")
 

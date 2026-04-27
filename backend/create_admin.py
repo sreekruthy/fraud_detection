@@ -23,8 +23,8 @@ import database.mongo as mongo_module
 
 ADMIN_NAME = "Axis Admin"
 ADMIN_EMAIL = "abc@axis.com"
-ADMIN_PASSWORD = "abcdef"       # User must change this on first login
-ADMIN_ROLE = "Fraud Analyst"                # Options: "Analyst", "SuperAdmin", etc.
+ADMIN_PASSWORD = "Abcd1234"       # User must change this on first login
+ADMIN_ROLE = "admin"                # Options: "Analyst", "SuperAdmin", etc.
 ADMIN_ID = "ADM12"
 
 
