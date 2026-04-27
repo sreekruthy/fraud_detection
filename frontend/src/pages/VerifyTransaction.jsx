@@ -1,244 +1,292 @@
+/**
+ * VerifyTransaction.jsx
+ * ----------------------
+ * User lands here from email link.
+ *
+ * SUSPICIOUS mode (purpose = "suspicious_verify"):
+ *   - Shows live countdown (synced with hold_expires_at from DB)
+ *   - "Your transaction is ON HOLD"
+ *   - Two buttons: Yes / No → determines txn_status
+ *   - If window expired: "Window closed — admin is reviewing"
+ *
+ * FRAUD mode (purpose = "fraud_feedback"):
+ *   - Shows "Your transaction was BLOCKED"
+ *   - Full fraud signals shown (triggered rules, top features, scores)
+ *   - "Was this you?" — for retraining only
+ *   - Yes → "Please redo your transaction"
+ *   - No  → "Thank you — your account is being reviewed"
+ */
+
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useEffect, useState, useCallback } from "react";
-import api from "../api/axiosConfig";
+import api from "../api/axiosConfig.js";
 
-// ---------------- COUNTDOWN HOOK ----------------
 function useCountdown(expiresAt) {
-  const [secondsLeft, setSecondsLeft] = useState(null);
-
+  const [sec, setSec] = useState(null);
   useEffect(() => {
     if (!expiresAt) return;
-
     const target = new Date(expiresAt).getTime();
-
-    const tick = () => {
-      const diff = Math.floor((target - Date.now()) / 1000);
-      setSecondsLeft(Math.max(0, diff));
-    };
-
+    const tick = () => setSec(Math.max(0, Math.floor((target - Date.now()) / 1000)));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [expiresAt]);
-
-  return secondsLeft;
+  return sec;
 }
 
-// ---------------- COMPONENT ----------------
 export default function VerifyTransaction() {
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
-  const autoResponse = searchParams.get("response");
+  const [params]                    = useSearchParams();
+  const token                       = params.get("token");
+  const autoResponse                = params.get("response");
 
-  const [info, setInfo] = useState(null);
-  const [secondsLeft, setSecondsLeft] = useState(null);
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [info, setInfo]             = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult]         = useState(null);
+  const [error, setError]           = useState(null);
 
-  // ---------------- HANDLE RESPONSE ----------------
-  const handleRespond = useCallback(async (response) => {
-    try {
-      const res = await api.post(
-        `/api/feedback/respond?token=${token}&response=${response}`
-      );
+  const secondsLeft = useCountdown(info?.hold_expires_at);
+  const isFraud     = info?.decision === "FRAUD" || info?.purpose === "fraud_feedback";
+  const windowOpen  = !isFraud && secondsLeft !== null && secondsLeft > 0;
+  const windowExpired = !isFraud && secondsLeft === 0;
 
-      setResult(res.data);
-
-    } catch {
-      alert("Submission failed");
-    }
-  }, [token]);
-
-  // ---------------- FETCH DATA ----------------
   useEffect(() => {
-    if (!token) {
-      setError("Invalid link");
-      setLoading(false);
-      return;
-    }
+    if (!token) { setError("Missing verification link."); setLoading(false); return; }
 
     api.get(`/api/feedback/verify?token=${token}`)
       .then(res => {
         setInfo(res.data);
-
-        const expiry = new Date(res.data.hold_expires_at || 0);
-        setSecondsLeft(Math.max(0, Math.floor((expiry - new Date()) / 1000)));
-
-        // Auto respond (from email links)
+        setLoading(false);
+        // Auto-submit if user clicked pre-answered email link and window still open
         if (autoResponse && !res.data.already_responded) {
-          handleRespond(autoResponse);
+          const isFraudTxn = res.data.decision === "FRAUD";
+          // SUSPICIOUS: only auto-submit if window not expired
+          if (isFraudTxn || new Date(res.data.hold_expires_at) > new Date()) {
+            handleRespond(autoResponse);
+          }
         }
       })
-      .catch(() => setError("Link expired or invalid"))
-      .finally(() => setLoading(false));
+      .catch(err => {
+        setError(err.response?.data?.detail || "Invalid or expired link.");
+        setLoading(false);
+      });
+  }, [token]);
 
-  }, [token, autoResponse, handleRespond]);
+  const handleRespond = async (response) => {
+    setSubmitting(true);
+    try {
+      const res = await api.post(`/api/feedback/respond?token=${token}&response=${response}`);
+      setResult(res.data);
+    } catch (e) {
+      setError(e.response?.data?.detail || "Something went wrong.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-  // ---------------- COUNTDOWN ----------------
-  const countdown = useCountdown(info?.hold_expires_at);
+  // ── Render helpers ──────────────────────────────────────────────────────────
+  if (loading) return <Page><Card><Center>🔍<br/><br/>Verifying your link…</Center></Card></Page>;
+  if (error)   return <Page><Card><Center>❌<br/><br/><strong>Link Error</strong><br/><br/><span style={{color:"#6b7280",fontSize:"14px"}}>{error}</span></Center></Card></Page>;
 
-  // ---------------- STATES ----------------
-  if (loading) return <Screen message="Loading..." />;
-  if (error) return <Screen message={error} />;
+  // ── Already responded ───────────────────────────────────────────────────────
+  if (info?.already_responded) return (
+    <Page><Card>
+      <Center>ℹ️<br/><br/><strong>Already Responded</strong><br/><br/>
+        <span style={{color:"#6b7280",fontSize:"14px"}}>
+          You already responded to transaction <strong>{info.transaction_id}</strong> as <strong>{info.feedback}</strong>.
+        </span>
+      </Center>
+    </Card></Page>
+  );
 
-  if (info?.already_responded) {
-    return <Screen message={`Already responded: ${info.feedback}`} />;
-  }
-
+  // ── Result screen ───────────────────────────────────────────────────────────
   if (result) {
+    const isLegit = result.feedback === "legitimate";
     return (
-      <Screen
-        message={
-          <>
-            <h2>Response Recorded</h2>
-            <p>Transaction: {result.transaction_id}</p>
-            <p>Status: {result.txn_status}</p>
-            <p>Feedback: {result.feedback}</p>
-          </>
-        }
-      />
+      <Page><Card>
+        <div style={{ textAlign:"center", padding:"20px" }}>
+          <div style={{ fontSize:"48px", marginBottom:"12px" }}>
+            {isLegit ? "✅" : "🚫"}
+          </div>
+          <h2 style={{ color:"#111827", margin:"0 0 10px", fontSize:"20px" }}>
+            {isFraud
+              ? (isLegit ? "Response Recorded" : "Report Confirmed")
+              : (isLegit ? "Transaction Confirmed" : "Transaction Blocked")}
+          </h2>
+          <p style={{ color:"#6b7280", fontSize:"14px", lineHeight:"1.6", margin:"0 0 20px" }}>
+            {result.message}
+          </p>
+          <div style={{ background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:"8px", padding:"12px", fontSize:"13px", color:"#374151" }}>
+            <strong>Transaction ID:</strong> {result.transaction_id}<br/>
+            <strong>Status:</strong> {result.txn_status}
+          </div>
+          {isFraud && isLegit && (
+            <div style={{ marginTop:"16px", background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:"8px", padding:"12px", fontSize:"13px", color:"#1d4ed8" }}>
+              💡 To complete your payment, please <strong>initiate a new transaction</strong>. This blocked transaction cannot be reversed.
+            </div>
+          )}
+        </div>
+      </Card></Page>
     );
   }
 
-  // ---------------- MODE ----------------
-  const isFraud =
-    info?.decision === "FRAUD" || info?.purpose === "fraud_feedback";
+  // ── Window expired (SUSPICIOUS only) ───────────────────────────────────────
+  if (windowExpired && !isFraud) return (
+    <Page><Card>
+      <BannerBar color="#6b7280" text="⏰ Response Window Closed" />
+      <Center>
+        <strong style={{ fontSize:"16px" }}>The response window has expired.</strong><br/><br/>
+        <span style={{ color:"#6b7280", fontSize:"14px" }}>
+          An admin is reviewing your transaction history and will make a decision.
+          You will be notified of the outcome.
+        </span><br/><br/>
+        <span style={{ fontSize:"12px", color:"#9ca3af" }}>Transaction ID: {info?.transaction_id}</span>
+      </Center>
+    </Card></Page>
+  );
 
-  const isExpired = countdown === 0 && !isFraud;
+  // ── Main verify UI ──────────────────────────────────────────────────────────
+  const triggered  = info?.explainability?.triggered_rules || [];
+  const topFeats   = info?.explainability?.top_features || [];
+  const scoreStr   = info ? `${(info.final_score * 100).toFixed(0)}%` : "—";
+  const ts         = info?.timestamp ? new Date(info.timestamp).toLocaleString() : "—";
+  const city       = info?.location?.city || "";
+  const country    = info?.location?.country || "";
 
-  if (isExpired) {
-    return <Screen message="Response window expired" />;
-  }
-
-  // ---------------- UI ----------------
   return (
-    <div style={wrapper}>
+    <Page>
+      <Card>
+        {/* Banner */}
+        <BannerBar
+          color={isFraud ? "#dc2626" : "#d97706"}
+          text={isFraud
+            ? "🚨 CRITICAL — Transaction Blocked"
+            : "⚠️ HIGH RISK — Transaction On Hold"}
+        />
 
-      {/* HEADER */}
-      <div style={header}>
-        <h2>Transaction Verification</h2>
-      </div>
-
-      {/* TRANSACTION INFO */}
-      <div style={card}>
-        <p><b>ID:</b> {info.transaction_id}</p>
-        <p><b>Amount:</b> ${info.amount}</p>
-        <p><b>Status:</b> {info.decision}</p>
-
-        {info.final_score !== undefined && (
-          <p><b>Risk Score:</b> {info.final_score}</p>
+        {/* Countdown (SUSPICIOUS only) */}
+        {!isFraud && secondsLeft !== null && secondsLeft > 0 && (
+          <div style={{ background: secondsLeft < 30 ? "#fef2f2" : "#fffbeb", border:`1px solid ${secondsLeft < 30 ? "#fca5a5" : "#fde68a"}`, borderRadius:"8px", padding:"12px", textAlign:"center", marginBottom:"16px" }}>
+            <div style={{ fontSize:"22px", fontWeight:"800", color: secondsLeft < 30 ? "#dc2626" : "#d97706", fontVariantNumeric:"tabular-nums" }}>
+              ⏱ {Math.floor(secondsLeft/60)}:{(secondsLeft%60).toString().padStart(2,"0")}
+            </div>
+            <div style={{ fontSize:"12px", color: secondsLeft < 30 ? "#991b1b" : "#92400e", marginTop:"4px" }}>
+              Time remaining to respond · Transaction is ON HOLD
+            </div>
+          </div>
         )}
 
-        {info.hold_expires_at && !isFraud && (
-          <p>
-            <b>Time left:</b>{" "}
-            <span style={countdownStyle(countdown)}>
-              {countdown}s
-            </span>
-          </p>
+        {/* FRAUD-specific blocked notice */}
+        {isFraud && (
+          <div style={{ background:"#fef2f2", border:"1px solid #fca5a5", borderRadius:"8px", padding:"12px 14px", marginBottom:"16px", textAlign:"center" }}>
+            <div style={{ fontWeight:"700", color:"#dc2626", fontSize:"14px" }}>
+              This transaction has been <strong>BLOCKED</strong>.
+            </div>
+            <div style={{ fontSize:"12px", color:"#991b1b", marginTop:"4px" }}>
+              Your response below is for our records and helps improve fraud detection.
+              It does not reverse the block.
+            </div>
+          </div>
         )}
-      </div>
 
-      {/* EXPLAINABILITY */}
-      {info.explainability && (
-        <div style={card}>
-          <h4>Why flagged?</h4>
+        <h2 style={{ margin:"0 0 4px", fontSize:"18px", fontWeight:"800", color:"#111827" }}>
+          {isFraud ? "Was This Transaction Yours?" : "Verify Your Transaction"}
+        </h2>
+        <p style={{ margin:"0 0 16px", fontSize:"13px", color:"#6b7280" }}>
+          {isFraud
+            ? "Please confirm whether you attempted this transaction. This helps us improve our system."
+            : "This transaction is ON HOLD. Confirm below and it will be processed or cancelled."}
+        </p>
 
-          <p>
-            <b>Rules:</b>{" "}
-            {info.explainability.triggered_rules?.join(", ") || "N/A"}
-          </p>
-
-          <p>
-            <b>Top Features:</b>{" "}
-            {info.explainability.top_features?.join(", ") || "N/A"}
-          </p>
+        {/* Transaction details */}
+        <div style={{ background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:"8px", padding:"14px", marginBottom:"14px" }}>
+          <div style={{ fontSize:"10px", fontWeight:"700", color:"#9ca3af", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"8px" }}>Transaction Details</div>
+          {[
+            ["ID",       info?.transaction_id],
+            ["Amount",   `$${(info?.amount||0).toLocaleString("en-US",{minimumFractionDigits:2})} USD`],
+            ["Location", `${city}, ${country}`],
+            ["Time",     ts],
+            ["Risk",     <span style={{color: isFraud?"#dc2626":"#d97706", fontWeight:"700"}}>{scoreStr} — {info?.decision}</span>],
+          ].map(([k,v]) => (
+            <div key={k} style={{ display:"flex", justifyContent:"space-between", fontSize:"13px", padding:"4px 0", borderBottom:"1px solid #e5e7eb" }}>
+              <span style={{ color:"#6b7280" }}>{k}</span>
+              <span style={{ color:"#111827", fontWeight:"500" }}>{v}</span>
+            </div>
+          ))}
         </div>
-      )}
 
-      {/* ACTIONS */}
-      <div style={card}>
-        <h4>{isFraud ? "Confirm Fraud" : "Is this your transaction?"}</h4>
+        {/* Triggered rules */}
+        {triggered.length > 0 && (
+          <div style={{ background: isFraud?"#fef2f2":"#fffbeb", border:`1px solid ${isFraud?"#fca5a5":"#fde68a"}`, borderRadius:"8px", padding:"12px", marginBottom:"14px" }}>
+            <div style={{ fontSize:"10px", fontWeight:"700", color: isFraud?"#991b1b":"#92400e", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"6px" }}>
+              {isFraud ? "Why This Was Blocked" : "Why This Was Flagged"}
+            </div>
+            {triggered.map((r,i) => <div key={i} style={{ fontSize:"13px", color: isFraud?"#7f1d1d":"#78350f", marginBottom:"3px" }}>• {r}</div>)}
+            {isFraud && topFeats.length > 0 && (
+              <div style={{ fontSize:"11px", color:"#9ca3af", marginTop:"6px" }}>
+                Key factors: <strong>{topFeats.join(", ")}</strong>
+              </div>
+            )}
+          </div>
+        )}
 
-        <div style={{ marginTop: "15px" }}>
-          <button
-            style={btnGreen}
-            onClick={() => handleRespond("legitimate")}
-          >
-            Yes
-          </button>
+        {/* On-hold notice (SUSPICIOUS) */}
+        {!isFraud && (
+          <div style={{ background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:"8px", padding:"10px 12px", marginBottom:"16px", fontSize:"13px", color:"#1d4ed8", textAlign:"center" }}>
+            ⏸ This transaction is <strong>ON HOLD</strong>. Your response determines whether it's processed or cancelled.
+          </div>
+        )}
 
-          <button
-            style={btnRed}
-            onClick={() => handleRespond("fraud")}
-          >
-            No
-          </button>
-        </div>
-      </div>
+        {/* Action buttons */}
+        {submitting ? (
+          <div style={{ textAlign:"center", padding:"16px", color:"#6b7280", fontSize:"14px" }}>Processing your response…</div>
+        ) : (
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+            <button onClick={() => handleRespond("legitimate")}
+              style={{ padding:"13px", background:"#16a34a", color:"white", border:"none", borderRadius:"8px", fontSize:"14px", fontWeight:"700", cursor:"pointer" }}>
+              {isFraud ? "✅ Yes — I'll redo it" : "✅ Yes, this was me"}
+            </button>
+            <button onClick={() => handleRespond("fraud")}
+              style={{ padding:"13px", background:"#dc2626", color:"white", border:"none", borderRadius:"8px", fontSize:"14px", fontWeight:"700", cursor:"pointer" }}>
+              {isFraud ? "❌ No — This wasn't me" : "❌ No, this wasn't me"}
+            </button>
+          </div>
+        )}
 
+        <p style={{ fontSize:"11px", color:"#9ca3af", textAlign:"center", marginTop:"14px", marginBottom:0 }}>
+          {isFraud
+            ? "Link valid for 7 days. Your response is for records only — does not unblock the transaction."
+            : "Link valid while window is open. Contact support if expired."}
+        </p>
+      </Card>
+    </Page>
+  );
+}
+
+function Page({ children }) {
+  return (
+    <div style={{ minHeight:"100vh", background:"#f3f4f6", display:"flex", alignItems:"center", justifyContent:"center", padding:"20px", fontFamily:"'Segoe UI',system-ui,sans-serif" }}>
+      {children}
     </div>
   );
 }
 
-// ---------------- REUSABLE SCREEN ----------------
-function Screen({ message }) {
+function Card({ children }) {
   return (
-    <div style={center}>
-      <div style={card}>
-        {typeof message === "string" ? <h3>{message}</h3> : message}
-      </div>
+    <div style={{ background:"white", borderRadius:"12px", boxShadow:"0 4px 24px rgba(0,0,0,0.1)", padding:"24px", width:"100%", maxWidth:"480px" }}>
+      {children}
     </div>
   );
 }
 
-// ---------------- STYLES ----------------
-const wrapper = {
-  minHeight: "100vh",
-  background: "#0f172a",
-  padding: "20px",
-  color: "white"
-};
+function BannerBar({ color, text }) {
+  return (
+    <div style={{ background:color, borderRadius:"8px 8px 0 0", padding:"14px 20px", margin:"-24px -24px 18px", textAlign:"center" }}>
+      <span style={{ color:"white", fontWeight:"700", fontSize:"15px" }}>{text}</span>
+    </div>
+  );
+}
 
-const header = {
-  marginBottom: "20px"
-};
-
-const card = {
-  background: "#1e293b",
-  padding: "20px",
-  borderRadius: "10px",
-  marginBottom: "15px"
-};
-
-const center = {
-  minHeight: "100vh",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  background: "#0f172a",
-  color: "white"
-};
-
-const btnGreen = {
-  background: "#16a34a",
-  color: "white",
-  border: "none",
-  padding: "10px 15px",
-  marginRight: "10px",
-  borderRadius: "6px"
-};
-
-const btnRed = {
-  background: "#dc2626",
-  color: "white",
-  border: "none",
-  padding: "10px 15px",
-  borderRadius: "6px"
-};
-
-const countdownStyle = (sec) => ({
-  color: sec < 60 ? "#dc2626" : "#f59e0b",
-  fontWeight: "bold"
-});
+function Center({ children }) {
+  return <div style={{ textAlign:"center", padding:"24px 0", fontSize:"15px", color:"#374151", lineHeight:"1.8" }}>{children}</div>;
+}
