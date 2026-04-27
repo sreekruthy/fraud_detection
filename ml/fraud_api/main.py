@@ -95,8 +95,7 @@ async def expire_on_hold_transactions():
                 await db.transactions.update_one(
                     {"transaction_id": txn_id},
                     {"$set": {
-                        "txn_status":           "BLOCKED",
-                        "decision":             "FRAUD",
+                        "txn_status":           "AWITING_ADMIN",
                         "customer_feedback":    "auto:expired",
                         "feedback_received_at": now,
                     }}
@@ -106,13 +105,12 @@ async def expire_on_hold_transactions():
                 await db.alerts.update_one(
                     {"transaction_id": txn_id, "status": "OPEN"},
                     {"$set": {
-                        "status":       "RESOLVED",
-                        "admin_action": "AUTO_EXPIRED",
+                        "admin_action": "AWAITING_ADMIN",
                         "updated_at":   now,
                     }}
                 )
 
-                print(f"  ⏰ EXPIRED: {txn_id} → BLOCKED (user did not respond in time)")
+                print(f"  ⏰ EXPIRED: {txn_id} → AWAITING_ADMIN (admin must review)")
 
         except Exception as e:
             # Never let the background task crash the server
