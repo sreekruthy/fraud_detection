@@ -28,6 +28,7 @@ function Login() {
       });
 
       localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("token", res.data.access_token);
       localStorage.setItem("user", res.data.email);
 
       navigate("/dashboard");

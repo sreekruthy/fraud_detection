@@ -34,10 +34,10 @@ async def startup_db_client():
 async def shutdown_db_client():
     await mongo.close_mongo_connection()
 
-app.include_router(transaction.router)
-app.include_router(alerts.router)
-app.include_router(auth.router)
-app.include_router(feedback.router)
+app.include_router(transaction.router,prefix="/api/transactions")
+app.include_router(alerts.router,prefix="/api/alerts")
+app.include_router(auth.router,prefix="/api/auth")
+app.include_router(feedback.router,prefix="/api/feedback")
 
 @app.get("/", tags=["Health Check"])
 async def root():
