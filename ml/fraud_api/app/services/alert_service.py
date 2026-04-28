@@ -33,7 +33,7 @@ async def create_alert(
     SUSPICIOUS alerts:
       - severity = HIGH
       - status   = OPEN  (admin must act after user responds / window expires)
-      - hold_expires_at set to when the 2-min user window closes
+      - hold_expires_at set to when the 5-min user window closes
       - history_summary attached so admin has context if user doesn't respond
 
     FRAUD alerts:

@@ -101,6 +101,7 @@ async def send_suspicious_email(
     city      = location.get("city", "Unknown")
     country   = location.get("country", "")
     ts_str    = timestamp.strftime("%B %d, %Y at %I:%M %p UTC") if isinstance(timestamp, datetime) else str(timestamp)
+    expiry_time = (timestamp + timedelta(seconds=response_window_seconds)).strftime("%I:%M %p UTC") if isinstance(timestamp, datetime) else "soon"
     score_pct = int(final_score * 100)
     mins      = response_window_seconds // 60
 
@@ -144,7 +145,7 @@ async def send_suspicious_email(
       <!-- Countdown notice -->
       <div style="background:#fffbeb;border:2px solid #f59e0b;border-radius:8px;padding:14px 16px;margin-bottom:16px;text-align:center;">
         <p style="margin:0;font-size:14px;font-weight:700;color:#92400e;">
-          ⏱ You have <strong>{mins} minutes</strong> to respond.
+          ⏱ Respond before <strong>{expiry_time}</strong> ({mins} minutes from transaction time).
         </p>
         <p style="margin:6px 0 0;font-size:12px;color:#b45309;">
           If you don't respond in time, an admin will review your transaction history and decide.
@@ -233,6 +234,7 @@ async def send_fraud_email(
     city      = location.get("city", "Unknown")
     country   = location.get("country", "")
     ts_str    = timestamp.strftime("%B %d, %Y at %I:%M %p UTC") if isinstance(timestamp, datetime) else str(timestamp)
+    expiry_time = (timestamp + timedelta(seconds=response_window_seconds)).strftime("%I:%M %p UTC") if isinstance(timestamp, datetime) else "soon"
     score_pct = int(final_score * 100)
 
     triggered_html = "".join(

@@ -27,15 +27,16 @@ function useCountdown(expiresAt) {
 // ── CountdownBadge component ──────────────────────────────────────────────────
 function CountdownBadge({ expiresAt, onExpired }) {
   const sec = useCountdown(expiresAt);
-  if (sec === null) return null;
-
-  const mins = Math.floor(sec / 60);
-  const secs = sec % 60;
   const expired = sec === 0;
 
   useEffect(() => {
     if (expired && onExpired) onExpired();
-  }, [expired]);
+  }, [expired, onExpired]);
+
+  if (sec === null) return null;  // ← early return AFTER all hooks
+
+  const mins = Math.floor(sec / 60);
+  const secs = sec % 60;
 
   if (expired) return (
     <span style={{ background:"#dc2626", color:"white", padding:"3px 10px", borderRadius:"99px", fontSize:"11px", fontWeight:"700" }}>
@@ -154,11 +155,13 @@ export default function Dashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [alertRes, txnRes] = await Promise.all([
+      const [alertRes, allAlertRes, txnRes] = await Promise.all([
         api.get("/api/alerts/?status=OPEN"),
+        api.get("/api/alerts/"),
         api.get("/api/transactions/flagged"),
       ]);
       const alertData = alertRes.data.alerts || [];
+      const allAlertData = allAlertRes.data.alerts || [];
       const txnData   = txnRes.data.transactions || [];
       setAlerts(alertData);
       setFlaggedTxns(txnData);
