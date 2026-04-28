@@ -92,7 +92,7 @@ async def send_suspicious_email(
     timestamp: datetime,
     explainability: dict,
     final_score: float,
-    response_window_seconds: int = 120,
+    response_window_seconds: int = 300,
 ):
     token   = _build_token(transaction_id, "suspicious_verify", expires_in_seconds=response_window_seconds + 300)
     yes_url = f"{FRONTEND_URL}/verify?token={token}&response=legitimate"

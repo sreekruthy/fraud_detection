@@ -101,10 +101,11 @@ async def expire_on_hold_transactions():
                     }}
                 )
 
-                # Resolve the alert so admin dashboard shows it as handled
+                # Keep alert open so admin can check it
                 await db.alerts.update_one(
                     {"transaction_id": txn_id, "status": "OPEN"},
                     {"$set": {
+                        "status":       "OPEN",
                         "admin_action": "AWAITING_ADMIN",
                         "updated_at":   now,
                     }}

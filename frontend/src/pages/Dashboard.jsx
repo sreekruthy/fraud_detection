@@ -3,6 +3,7 @@ import Sidebar from "../components/Sidebar";
 import { useEffect, useState, useCallback, useRef } from "react";
 import api from "../api/axiosConfig.js";
 
+
 // ── Countdown hook ────────────────────────────────────────────────────────────
 function useCountdown(expiresAt) {
   const [secondsLeft, setSecondsLeft] = useState(null);
@@ -24,13 +25,17 @@ function useCountdown(expiresAt) {
 }
 
 // ── CountdownBadge component ──────────────────────────────────────────────────
-function CountdownBadge({ expiresAt }) {
+function CountdownBadge({ expiresAt, onExpired }) {
   const sec = useCountdown(expiresAt);
   if (sec === null) return null;
 
   const mins = Math.floor(sec / 60);
   const secs = sec % 60;
   const expired = sec === 0;
+
+  useEffect(() => {
+    if (expired && onExpired) onExpired();
+  }, [expired]);
 
   if (expired) return (
     <span style={{ background:"#dc2626", color:"white", padding:"3px 10px", borderRadius:"99px", fontSize:"11px", fontWeight:"700" }}>
@@ -97,6 +102,45 @@ function HistorySummary({ summary }) {
   );
 }
 
+function AlertActions({ alert, loading_key, handleAction, setSelectedTxn }) {
+  const sec = useCountdown(alert.hold_expires_at);
+  const expired = sec === 0;
+
+  return (
+    <div style={{ marginTop:"8px" }}>
+      {expired && alert.history_summary && (
+        <div style={{ marginBottom:"10px" }}>
+          <div style={{ fontSize:"12px", color:"#f59e0b", fontWeight:"600", marginBottom:"6px" }}>
+            ⚠️ User did not respond. Review their history before deciding:
+          </div>
+          <HistorySummary summary={alert.history_summary} />
+        </div>
+      )}
+      {!expired && (
+        <div style={{ fontSize:"12px", color:"#64748b", marginBottom:"8px" }}>
+          Waiting for user response… You can also act now if needed.
+        </div>
+      )}
+      <div style={{ display:"flex", gap:"8px" }}>
+        <button onClick={() => setSelectedTxn(alert)}
+          style={{ padding:"6px 12px", background:"#334155", border:"none", color:"#e2e8f0", borderRadius:"6px", cursor:"pointer", fontSize:"12px" }}>
+          View Details
+        </button>
+        <button onClick={() => handleAction(alert.transaction_id, "PERMIT")}
+          disabled={!!loading_key}
+          style={{ padding:"6px 14px", background: loading_key === "PERMIT" ? "#166534" : "#16a34a", border:"none", color:"white", borderRadius:"6px", cursor:"pointer", fontSize:"12px", fontWeight:"600" }}>
+          {loading_key === "PERMIT" ? "…" : "✅ Permit"}
+        </button>
+        <button onClick={() => handleAction(alert.transaction_id, "BLOCK")}
+          disabled={!!loading_key}
+          style={{ padding:"6px 14px", background: loading_key === "BLOCK" ? "#7f1d1d" : "#dc2626", border:"none", color:"white", borderRadius:"6px", cursor:"pointer", fontSize:"12px", fontWeight:"600" }}>
+          {loading_key === "BLOCK" ? "…" : "🚫 Block"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate                    = useNavigate();
@@ -106,6 +150,7 @@ export default function Dashboard() {
   const [loading, setLoading]       = useState(true);
   const [activeTab, setActiveTab]   = useState("alerts");
   const [actionLoading, setActionLoading] = useState({});
+  const [selectedTxn, setSelectedTxn] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -223,7 +268,6 @@ export default function Dashboard() {
             {alerts.map((alert, i) => {
               const isFraud     = alert.decision === "FRAUD";
               const accentColor = isFraud ? "#ef4444" : "#f59e0b";
-              const expired     = alert.hold_expires_at && new Date(alert.hold_expires_at) < new Date();
               const loading_key = actionLoading[alert.transaction_id];
 
               return (
@@ -280,43 +324,14 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {/* SUSPICIOUS: history + action buttons */}
                   {!isFraud && (
-                    <div style={{ marginTop:"8px" }}>
-                      {/* User history — shown when window expired */}
-                      {expired && alert.history_summary && (
-                        <div style={{ marginBottom:"10px" }}>
-                          <div style={{ fontSize:"12px", color:"#f59e0b", fontWeight:"600", marginBottom:"6px" }}>
-                            ⚠️ User did not respond. Review their history before deciding:
-                          </div>
-                          <HistorySummary summary={alert.history_summary} />
-                        </div>
-                      )}
-                      {!expired && (
-                        <div style={{ fontSize:"12px", color:"#64748b", marginBottom:"8px" }}>
-                          Waiting for user response… You can also act now if needed.
-                        </div>
-                      )}
-                      <div style={{ display:"flex", gap:"8px" }}>
-                        <button onClick={() => navigate(`/transaction/${alert.transaction_id}`)}
-                          style={{ padding:"6px 12px", background:"#334155", border:"none", color:"#e2e8f0", borderRadius:"6px", cursor:"pointer", fontSize:"12px" }}>
-                          View Details
-                        </button>
-                        <button
-                          onClick={() => handleAction(alert.transaction_id, "PERMIT")}
-                          disabled={!!loading_key}
-                          style={{ padding:"6px 14px", background: loading_key === "PERMIT" ? "#166534" : "#16a34a", border:"none", color:"white", borderRadius:"6px", cursor:"pointer", fontSize:"12px", fontWeight:"600" }}>
-                          {loading_key === "PERMIT" ? "…" : "✅ Permit"}
-                        </button>
-                        <button
-                          onClick={() => handleAction(alert.transaction_id, "BLOCK")}
-                          disabled={!!loading_key}
-                          style={{ padding:"6px 14px", background: loading_key === "BLOCK" ? "#7f1d1d" : "#dc2626", border:"none", color:"white", borderRadius:"6px", cursor:"pointer", fontSize:"12px", fontWeight:"600" }}>
-                          {loading_key === "BLOCK" ? "…" : "🚫 Block"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                    <AlertActions
+                    alert={alert}
+                    loading_key={loading_key}
+                    handleAction={handleAction}
+                    setSelectedTxn={setSelectedTxn}
+                    />
+                    )}
 
                   {/* FRAUD: informational only */}
                   {isFraud && (
@@ -324,10 +339,10 @@ export default function Dashboard() {
                       <span style={{ fontSize:"12px", color:"#94a3b8" }}>
                         Transaction auto-blocked. Informational email sent to user.
                       </span>
-                      <button onClick={() => navigate(`/transaction/${alert.transaction_id}`)}
-                        style={{ padding:"5px 12px", background:"#334155", border:"none", color:"#e2e8f0", borderRadius:"6px", cursor:"pointer", fontSize:"12px" }}>
-                        View
-                      </button>
+                      <button onClick={() => setSelectedTxn(alert)}
+                      style={{ padding:"5px 12px", background:"#334155", border:"none", color:"#e2e8f0", borderRadius:"6px", cursor:"pointer", fontSize:"12px" }}>
+                        View Details
+                        </button>
                     </div>
                   )}
 
@@ -366,7 +381,7 @@ export default function Dashboard() {
                         <tr key={i} style={{ borderBottom:"1px solid #0f172a" }}
                           onMouseEnter={e => e.currentTarget.style.background="#0f172a"}
                           onMouseLeave={e => e.currentTarget.style.background="transparent"}>
-                          <td style={{ padding:"10px 14px", fontSize:"12px", color:"#94a3b8", cursor:"pointer" }} onClick={() => navigate(`/transaction/${txn.transaction_id}`)}>
+                          <td style={{ padding:"10px 14px", fontSize:"12px", color:"#94a3b8", cursor:"pointer" }} onClick={() => setSelectedTxn(txn)}>
                             {txn.transaction_id}
                           </td>
                           <td style={{ padding:"10px 14px", fontSize:"12px" }}>{txn.user_id}</td>
@@ -404,6 +419,60 @@ export default function Dashboard() {
             )}
           </div>
         )}
+        {/* ── Transaction Detail Modal ── */}
+{selectedTxn && (
+  <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}
+    onClick={() => setSelectedTxn(null)}>
+    <div style={{ background:"#1e293b", border:"1px solid #334155", borderRadius:"14px", padding:"28px", width:"100%", maxWidth:"520px", color:"white" }}
+      onClick={e => e.stopPropagation()}>
+
+      {/* Header */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
+        <h3 style={{ margin:0, fontSize:"16px", fontWeight:"700" }}>
+          {selectedTxn.decision === "FRAUD" ? "🚨" : "⚠️"} Transaction Details
+        </h3>
+        <button onClick={() => setSelectedTxn(null)}
+          style={{ background:"#334155", border:"none", color:"#94a3b8", padding:"4px 10px", borderRadius:"6px", cursor:"pointer", fontSize:"14px" }}>✕</button>
+      </div>
+
+      {/* Details grid */}
+      {[
+        ["Transaction ID", selectedTxn.transaction_id],
+        ["User ID",        selectedTxn.user_id],
+        ["Amount",         `$${(selectedTxn.amount||0).toLocaleString("en-US",{minimumFractionDigits:2})}`],
+        ["Decision",       selectedTxn.decision],
+        ["Status",         selectedTxn.txn_status],
+        ["Risk Score",     `${((selectedTxn.final_score||0)*100).toFixed(0)}%`],
+        ["ML Score",       `${((selectedTxn.ml_score||0)*100).toFixed(0)}%`],
+        ["Rules Score",    `${((selectedTxn.rule_score||0)*100).toFixed(0)}%`],
+        ["Location",       selectedTxn.location ? `${selectedTxn.location.city}, ${selectedTxn.location.country}` : "—"],
+        ["Device",         selectedTxn.device?.browser || "—"],
+        ["IP",             selectedTxn.device?.ip || "—"],
+        ["Feedback",       selectedTxn.customer_feedback || "—"],
+      ].map(([k, v]) => (
+        <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:"1px solid #334155", fontSize:"13px" }}>
+          <span style={{ color:"#64748b" }}>{k}</span>
+          <span style={{ fontWeight:"600", color: k==="Decision" && selectedTxn.decision==="FRAUD" ? "#ef4444" : k==="Decision" ? "#f59e0b" : "white" }}>{v}</span>
+        </div>
+      ))}
+
+      {/* Triggered rules */}
+      {selectedTxn.explainability?.triggered_rules?.length > 0 && (
+        <div style={{ marginTop:"16px" }}>
+          <div style={{ fontSize:"11px", color:"#64748b", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"8px" }}>Why Flagged</div>
+          {selectedTxn.explainability.triggered_rules.map((r, i) => (
+            <div key={i} style={{ fontSize:"12px", color:"#e2e8f0", marginBottom:"4px" }}>• {r}</div>
+          ))}
+        </div>
+      )}
+
+      <button onClick={() => setSelectedTxn(null)}
+        style={{ marginTop:"20px", width:"100%", padding:"10px", background:"#334155", border:"none", color:"white", borderRadius:"8px", cursor:"pointer", fontSize:"13px" }}>
+        Close
+      </button>
+    </div>
+  </div>
+)}
 
       </div>
     </div>
