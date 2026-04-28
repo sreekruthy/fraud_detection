@@ -10,7 +10,11 @@ function useCountdown(expiresAt) {
 
   useEffect(() => {
     if (!expiresAt) return;
-    const target = new Date(expiresAt).getTime();
+    const normalized =
+      typeof expiresAt === "string" && !expiresAt.endsWith("Z") && !expiresAt.includes("+")
+        ? expiresAt + "Z"
+        : expiresAt;
+    const target = new Date(normalized).getTime();
 
     const tick = () => {
       const diff = Math.floor((target - Date.now()) / 1000);
@@ -25,20 +29,14 @@ function useCountdown(expiresAt) {
 }
 
 // ── CountdownBadge component ──────────────────────────────────────────────────
-function CountdownBadge({ expiresAt, onExpired }) {
-  const sec = useCountdown(expiresAt);
-  const expired = sec === 0;
+function CountdownBadge({ sec }) {
 
-  useEffect(() => {
-    if (expired && onExpired) onExpired();
-  }, [expired, onExpired]);
-
-  if (sec === null) return null;  // ← early return AFTER all hooks
+  if (sec === null) return null;  // early return AFTER all hooks
 
   const mins = Math.floor(sec / 60);
   const secs = sec % 60;
 
-  if (expired) return (
+  if (sec === 0) return (
     <span style={{ background:"#dc2626", color:"white", padding:"3px 10px", borderRadius:"99px", fontSize:"11px", fontWeight:"700" }}>
       ⏰ Window Expired — Admin Action Required
     </span>
@@ -103,12 +101,16 @@ function HistorySummary({ summary }) {
   );
 }
 
-function AlertActions({ alert, loading_key, handleAction, setSelectedTxn }) {
-  const sec = useCountdown(alert.hold_expires_at);
+function AlertActionsWithTimer({ alert, loading_key, handleAction, setSelectedTxn }) {
+  const sec = useCountdown(alert.hold_expires_at);  // countdown lives here
   const expired = sec === 0;
 
   return (
     <div style={{ marginTop:"8px" }}>
+      <div style={{ marginBottom:"8px" }}>
+        <CountdownBadge sec={sec} />
+      </div>
+
       {expired && alert.history_summary && (
         <div style={{ marginBottom:"10px" }}>
           <div style={{ fontSize:"12px", color:"#f59e0b", fontWeight:"600", marginBottom:"6px" }}>
@@ -117,7 +119,7 @@ function AlertActions({ alert, loading_key, handleAction, setSelectedTxn }) {
           <HistorySummary summary={alert.history_summary} />
         </div>
       )}
-      {!expired && (
+      {!expired && sec !== null && (
         <div style={{ fontSize:"12px", color:"#64748b", marginBottom:"8px" }}>
           Waiting for user response… You can also act now if needed.
         </div>
@@ -141,6 +143,7 @@ function AlertActions({ alert, loading_key, handleAction, setSelectedTxn }) {
     </div>
   );
 }
+
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard() {
@@ -298,10 +301,7 @@ export default function Dashboard() {
                       <span style={{ background:accentColor, color:"white", padding:"2px 9px", borderRadius:"99px", fontSize:"10px", fontWeight:"700" }}>
                         {alert.severity}
                       </span>
-                      {/* Countdown only for SUSPICIOUS */}
-                      {!isFraud && alert.hold_expires_at && (
-                        <CountdownBadge expiresAt={alert.hold_expires_at} />
-                      )}
+                    
                       {isFraud && (
                         <span style={{ background:"#334155", color:"#94a3b8", padding:"2px 9px", borderRadius:"99px", fontSize:"10px" }}>
                           AUTO-BLOCKED
@@ -328,7 +328,7 @@ export default function Dashboard() {
                   )}
 
                   {!isFraud && (
-                    <AlertActions
+                    <AlertActionsWithTimer
                     alert={alert}
                     loading_key={loading_key}
                     handleAction={handleAction}

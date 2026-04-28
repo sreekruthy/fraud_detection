@@ -68,7 +68,7 @@ async def create_alert(
         "ml_score":        ml_score,
         "amount":          amount,
         "explainability":  explainability,
-        "hold_expires_at": hold_expires_at,
+        "hold_expires_at": hold_expires_at.isoformat() if hold_expires_at else None,
         "history_summary": history_summary,
         "created_at":      now,
         "updated_at":      now,

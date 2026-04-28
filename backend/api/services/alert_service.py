@@ -18,8 +18,19 @@ async def get_alerts(status: str | None = None) -> list[dict]:
     async for alert in cursor:
         # Serialize datetime fields
         for field in ("created_at", "updated_at", "hold_expires_at"):
-            if field in alert and hasattr(alert[field], "isoformat"):
-                alert[field] = alert[field].isoformat()
+            val = alert.get(field)
+            if val is None:
+                continue
+
+            # datetime objects should be converted to ISO format strings for JSON serialization
+            if hasattr(val, "isoformat"):
+                dt = val if val.tzinfo else val.replace(tzinfo=timezone.utc)
+                alert[field] = dt.isoformat()
+
+            # already a string, but ensure it's in ISO format 
+            elif isinstance(val, str) and val and not val.endswith("Z") and "+" not in val:
+                alert[field] = val + "+00:00"
+            
         alerts.append(alert)
 
     return alerts
