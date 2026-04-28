@@ -49,7 +49,7 @@ async def create_alert(
     severity  = "CRITICAL" if decision == "FRAUD" else "HIGH"
 
     if auto_resolve:
-        status       = "RESOLVED"
+        status       = "OPEN"
         admin_action = "AUTO_BLOCKED"
     else:
         status       = "OPEN"

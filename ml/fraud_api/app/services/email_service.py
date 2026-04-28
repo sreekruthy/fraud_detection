@@ -80,7 +80,7 @@ async def _send(to_email: str, subject: str, html: str):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SUSPICIOUS email — transaction is ON HOLD, user has 2 minutes
+# SUSPICIOUS email — transaction is ON HOLD, user has 5 minutes
 # ─────────────────────────────────────────────────────────────────────────────
 
 async def send_suspicious_email(
@@ -234,7 +234,6 @@ async def send_fraud_email(
     city      = location.get("city", "Unknown")
     country   = location.get("country", "")
     ts_str    = timestamp.strftime("%B %d, %Y at %I:%M %p UTC") if isinstance(timestamp, datetime) else str(timestamp)
-    expiry_time = (timestamp + timedelta(seconds=response_window_seconds)).strftime("%I:%M %p UTC") if isinstance(timestamp, datetime) else "soon"
     score_pct = int(final_score * 100)
 
     triggered_html = "".join(
