@@ -634,6 +634,7 @@ To add another admin, edit the credentials in `create_admin.py` and run it again
 Expected — the rule engine uses `avg_transaction_amount`, `transaction_frequency`, and `historical_risk_score` from the users collection, which start at `0`. Run `--count 30` first to build up history.
 
 
+
 **Simulator can't reach ML API**
 ```
 Cannot connect to ML API at http://localhost:8000/transaction
@@ -641,9 +642,11 @@ Cannot connect to ML API at http://localhost:8000/transaction
 Terminal 2 must be running before the simulator is started. The simulator aborts after 5 consecutive connection failures.
 
 
+
 **`MONGO_URI` not found**
 
 The simulator exits immediately if `MONGO_URI` is missing from `ml/fraud_api/.env`. Make sure the file exists at that exact path (not the project root `.env`).
+
 
 
 **MailHog not receiving emails**
@@ -654,6 +657,7 @@ docker compose up -d         # restart if needed
 Then visit http://localhost:8025.
 
 
+
 **Port already in use**
 ```bash
 lsof -ti:8000 | xargs kill -9    # ML API
@@ -661,9 +665,11 @@ lsof -ti:8001 | xargs kill -9    # Backend API
 ```
 
 
+
 **Frontend CORS errors from backend** 
 
 The ML API allows all origins in development. If the dashboard (port 5173) can't reach the backend API (port 8001), check that the backend CORS config includes `http://localhost:5173`.
+
 
 
 **`JWT_SECRET_KEY` errors**
