@@ -498,7 +498,7 @@ npm run dev
 # From project root
 
 # First time / fresh DB: seed users into MongoDB
-python3 transaction_simulator.py --users-only
+python3 transaction_simulator.py --users -only
 
 # Send 10 transactions
 python3 transaction_simulator.py --count 10
