@@ -1,28 +1,3 @@
-"""
-app/services/transaction_service.py
-------------------------------------
-Fraud detection pipeline with clearly differentiated flows:
-
-SUSPICIOUS flow:
-    - txn_status = "ON_HOLD"
-    - Admin alert (severity=HIGH) includes user history summary + hold_expires_at
-    - Email sent to user with a 2-minute countdown timer
-    - If user responds in time → txn_status updated, alert resolved
-    - If user does NOT respond in 2 min → admin dashboard shows "Expired, decide now"
-      with full user history summary to help admin decide
-    - Admin final call: PERMIT or BLOCK
-
-FRAUD flow:
-    - txn_status = "BLOCKED" immediately (no waiting, no user input needed to block)
-    - Admin alert (severity=CRITICAL, auto-marked resolved with action=AUTO_BLOCKED)
-    - AFTER blocking, email is sent to user:
-        "Your transaction of $X was blocked due to fraud signals.
-         Here's why: [triggered rules, scores].
-         Was this actually you? If yes, please redo the transaction."
-    - User response → saved to customer_feedback for retraining ONLY
-    - Response does NOT unblock. Block is permanent.
-"""
-
 import math
 import joblib
 import pandas as pd
@@ -33,7 +8,7 @@ from app.services.rule_engine import compute_rule_score
 from app.services.alert_service import create_alert
 from app.services.email_service import send_fraud_email, send_suspicious_email
 
-# ── Load model once ───────────────────────────────────────────────────────────
+#  Load model once
 model = joblib.load("fraud_voting_classifier.joblib")
 print("✅ Model loaded from fraud_voting_classifier.joblib")
 
@@ -56,7 +31,7 @@ HOME_CITY_LOOKUP = {
 SUSPICIOUS_WINDOW_SECONDS = 300
 
 
-# ── Feature helpers ───────────────────────────────────────────────────────────
+#  Feature helpers 
 
 def haversine_dist(lat1, lon1, lat2, lon2) -> float:
     R    = 6371.0
@@ -171,15 +146,10 @@ async def get_user_history_summary(user_id: str) -> dict:
     }
 
 
-# ── Main pipeline ─────────────────────────────────────────────────────────────
+#  Main pipeline  
 
 async def create_transaction(transaction_data: dict) -> dict:
 
-    # FIX: Parse the timestamp and ALWAYS ensure it is UTC-aware.
-    # Pydantic's model_dump() may return a tz-aware datetime (if the client
-    # sent an ISO string with offset, e.g. "2026-04-25T10:00:00+00:00").
-    # MongoDB returns naive UTC datetimes for history records.
-    # By normalizing here to UTC-aware, rule_engine comparisons are safe.
     ts = transaction_data.get("timestamp")
     if isinstance(ts, str):
         ts = datetime.fromisoformat(ts)
@@ -190,7 +160,7 @@ async def create_transaction(transaction_data: dict) -> dict:
             ts = ts.astimezone(timezone.utc)        # any offset → UTC
     transaction_data["timestamp"] = ts
 
-    # ── Scores ────────────────────────────────────────────────────────────────
+    # Scores
     user_history = await db.transactions.find(
         {"user_id": transaction_data["user_id"]}
     ).to_list(100)
@@ -205,10 +175,10 @@ async def create_transaction(transaction_data: dict) -> dict:
 
     now = datetime.now(timezone.utc)
 
-    # ── txn_status ────────────────────────────────────────────────────────────
-    # FRAUD      → BLOCKED immediately (admin + ML decision, final)
-    # SUSPICIOUS → ON_HOLD (waits for user response, then admin decides)
-    # LEGITIMATE → PROCESSED
+    #  txn_status 
+    # FRAUD      - BLOCKED immediately (admin + ML decision, final)
+    # SUSPICIOUS - ON_HOLD (waits for user response, then admin decides)
+    # LEGITIMATE - PROCESSED
     if decision == "FRAUD":
         txn_status = "BLOCKED"
     elif decision == "SUSPICIOUS":
@@ -221,7 +191,7 @@ async def create_transaction(transaction_data: dict) -> dict:
         if decision == "SUSPICIOUS" else None
     )
 
-    # ── Save to DB ────────────────────────────────────────────────────────────
+    # Save to DB
     mongo_doc = {
         "transaction_id":       transaction_data["transaction_id"],
         "user_id":              transaction_data["user_id"],
@@ -249,7 +219,7 @@ async def create_transaction(transaction_data: dict) -> dict:
     await db.transactions.insert_one(mongo_doc)
     print(f"✅ Saved {transaction_data['transaction_id']} → {decision} ({txn_status})")
 
-    # ── Post-save: fetch user for email ───────────────────────────────────────
+    # Post-save: fetch user for email 
     user       = await db.users.find_one({"user_id": transaction_data["user_id"]})
     user_email = user.get("email") if user else None
     user_name  = user.get("name", "User") if user else "User"
@@ -278,7 +248,7 @@ async def create_transaction(transaction_data: dict) -> dict:
     }
 
 
-# ── SUSPICIOUS handler ────────────────────────────────────────────────────────
+# SUSPICIOUS handler 
 
 async def _handle_suspicious(
     transaction_data, mongo_doc, explain,
@@ -331,7 +301,7 @@ async def _handle_suspicious(
             print(f"  ⚠ Email failed: {e}")
 
 
-# ── FRAUD handler ─────────────────────────────────────────────────────────────
+# FRAUD handler 
 
 async def _handle_fraud(
     transaction_data, mongo_doc, explain,

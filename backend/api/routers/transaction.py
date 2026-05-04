@@ -15,9 +15,7 @@ def _serialize(txn: dict) -> dict:
     return txn
 
 
-# -------------------------
 # POST Transaction (Protected)
-# -------------------------
 @router.post("/")
 async def ingest_transaction(
     transaction: TransactionCreate,
@@ -32,9 +30,7 @@ async def ingest_transaction(
     }
 
 
-# -------------------------
 # GET Flagged Transactions
-# -------------------------
 @router.get("/flagged")
 async def fetch_flagged(status: str | None = Query(None)):
     """SUSPICIOUS + FRAUD transactions. Filter by ?status=ON_HOLD etc."""
@@ -48,9 +44,7 @@ async def fetch_flagged(status: str | None = Query(None)):
     return {"transactions": txns}
 
 
-# -------------------------
 # GET User Transactions
-# -------------------------
 @router.get("/user/{user_id}")
 async def fetch_user_transactions(user_id: str):
     txns = []
@@ -59,9 +53,7 @@ async def fetch_user_transactions(user_id: str):
     return {"transactions": txns, "total": len(txns)}
 
 
-# -------------------------
 # GET Transaction (Protected)
-# -------------------------
 @router.get("/{transaction_id}")
 async def fetch_transaction(
     transaction_id: str,

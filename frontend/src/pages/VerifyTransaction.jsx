@@ -84,11 +84,11 @@ export default function VerifyTransaction() {
     }
   };
 
-  // ── Render helpers ──────────────────────────────────────────────────────────
+  // Render helpers
   if (loading) return <Page><Card><Center>🔍<br/><br/>Verifying your link…</Center></Card></Page>;
   if (error)   return <Page><Card><Center>❌<br/><br/><strong>Link Error</strong><br/><br/><span style={{color:"#6b7280",fontSize:"14px"}}>{error}</span></Center></Card></Page>;
 
-  // ── Already responded ───────────────────────────────────────────────────────
+  // Already responded 
   if (info?.already_responded) return (
     <Page><Card>
       <Center>ℹ️<br/><br/><strong>Already Responded</strong><br/><br/>
@@ -99,7 +99,7 @@ export default function VerifyTransaction() {
     </Card></Page>
   );
 
-  // ── Result screen ───────────────────────────────────────────────────────────
+  // Result screen
   if (result) {
     const isLegit = result.feedback === "legitimate";
     return (
@@ -130,7 +130,7 @@ export default function VerifyTransaction() {
     );
   }
 
-  // ── Window expired (SUSPICIOUS only) ───────────────────────────────────────
+  // Window expired (SUSPICIOUS only) 
   if (windowExpired && !isFraud) return (
     <Page><Card>
       <BannerBar color="#6b7280" text="⏰ Response Window Closed" />
@@ -145,7 +145,7 @@ export default function VerifyTransaction() {
     </Card></Page>
   );
 
-  // ── Main verify UI ──────────────────────────────────────────────────────────
+  //Main verify UI
   const triggered  = info?.explainability?.triggered_rules || [];
   const topFeats   = info?.explainability?.top_features || [];
   const scoreStr   = info ? `${(info.final_score * 100).toFixed(0)}%` : "—";

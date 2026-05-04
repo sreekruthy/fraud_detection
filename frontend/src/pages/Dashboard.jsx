@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import api from "../api/axiosConfig.js";
 
 
-// ── Countdown hook ────────────────────────────────────────────────────────────
+//  Countdown hook 
 function useCountdown(expiresAt) {
   const [secondsLeft, setSecondsLeft] = useState(null);
 
@@ -28,7 +28,7 @@ function useCountdown(expiresAt) {
   return secondsLeft;
 }
 
-// ── CountdownBadge component ──────────────────────────────────────────────────
+// CountdownBadge component 
 function CountdownBadge({ sec }) {
 
   if (sec === null) return null;  // early return AFTER all hooks
@@ -53,7 +53,7 @@ function CountdownBadge({ sec }) {
   );
 }
 
-// ── HistorySummary component ──────────────────────────────────────────────────
+// HistorySummary component 
 function HistorySummary({ summary }) {
   const [open, setOpen] = useState(false);
   if (!summary || summary.total === 0) return (
@@ -145,7 +145,7 @@ function AlertActionsWithTimer({ alert, loading_key, handleAction, setSelectedTx
 }
 
 
-// ── Main Dashboard ────────────────────────────────────────────────────────────
+// Main Dashboard
 export default function Dashboard() {
   const navigate                    = useNavigate();
   const [alerts, setAlerts]         = useState([]);

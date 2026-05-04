@@ -94,10 +94,6 @@ export default Login;
 
 
 
-
-
-// ================= STYLES =================
-
 const wrapper = {
   minHeight: "100vh",
   background: "#0f172a",

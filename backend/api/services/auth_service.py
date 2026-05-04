@@ -5,9 +5,7 @@ import uuid
 from datetime import datetime
 
 
-# -----------------------------
 # Admin Login
-# -----------------------------
 async def login_user(email: str, password: str):
     # Look up in admins collection (not users)
     admin = await mongo.db.admins.find_one({"email": email})
@@ -27,9 +25,8 @@ async def login_user(email: str, password: str):
     return token
 
 
-# -----------------------------
+
 # Admin Creation (called only by a SuperAdmin or script)
-# -----------------------------
 async def register_user(name: str, email: str, password: str, role: str):
     # Prevent duplicate admin accounts
     existing = await mongo.db.admins.find_one({"email": email})

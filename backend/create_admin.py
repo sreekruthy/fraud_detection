@@ -1,15 +1,3 @@
-"""
-create_admin.py
----------------
-Run this ONCE from the backend/ folder to create an admin user:
-
-    python create_admin.py
-
-The script hashes the password properly and inserts the admin
-into the 'admins' collection. Delete this file or restrict access
-after use — it should never be exposed publicly.
-"""
-
 import asyncio
 import bcrypt
 import sys

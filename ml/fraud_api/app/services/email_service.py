@@ -33,11 +33,11 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 
-# ── JWT import — works with PyJWT 1.x and 2.x ────────────────────────────────
+
 try:
-    import PyJWT as pyjwt           # explicit import avoids the bare `jwt` package
+    import PyJWT as pyjwt           
 except ImportError:
-    import jwt as pyjwt             # fallback: hope it's PyJWT and not the other one
+    import jwt as pyjwt             
 
 load_dotenv()
 
@@ -79,10 +79,8 @@ async def _send(to_email: str, subject: str, html: str):
     )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# SUSPICIOUS email — transaction is ON HOLD, user has 5 minutes
-# ─────────────────────────────────────────────────────────────────────────────
 
+# SUSPICIOUS email — transaction is ON HOLD, user has 5 minutes
 async def send_suspicious_email(
     user_email: str,
     user_name: str,
@@ -212,10 +210,7 @@ async def send_suspicious_email(
     )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # FRAUD email — transaction already BLOCKED, response is for retraining
-# ─────────────────────────────────────────────────────────────────────────────
-
 async def send_fraud_email(
     user_email: str,
     user_name: str,

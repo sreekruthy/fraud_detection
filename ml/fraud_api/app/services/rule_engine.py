@@ -1,16 +1,3 @@
-"""
-app/services/rule_engine.py
----------------------------
-Computes the rule_score based on three anomaly checks against
-the user's last 30 days of transaction history:
-
-    1. Amount anomaly  — is this amount statistically unusual? (Z-score > 2)
-    2. Location anomaly — is this location far from where they usually transact?
-    3. Time anomaly    — is this hour far from when they usually transact?
-
-Each rule contributes 1 point. Final score = points / 3 (range: 0.0 – 1.0)
-"""
-
 import math
 import statistics
 from datetime import datetime, timezone, timedelta
@@ -19,12 +6,6 @@ TIME_WINDOW_DAYS = 30
 
 
 def _to_utc(dt) -> datetime:
-    """
-    Normalize any datetime to UTC-aware.
-    - Already UTC-aware  → returned as-is
-    - Offset-aware (non-UTC) → converted to UTC
-    - Naive (no tzinfo)  → assumed UTC, made aware
-    """
     if dt is None:
         return dt
     if not isinstance(dt, datetime):
@@ -35,7 +16,7 @@ def _to_utc(dt) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
-# ── Haversine distance ────────────────────────────────────────────────────────
+# Haversine distance 
 
 def haversine(lat1, lon1, lat2, lon2):
     """Returns great-circle distance in km between two coordinates."""
@@ -46,7 +27,7 @@ def haversine(lat1, lon1, lat2, lon2):
     a = math.sin(dlat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dlon/2)**2
     return 2 * R * math.asin(math.sqrt(a))
 
-# ── Rule engine ───────────────────────────────────────────────────────────────
+# Rule engine 
 
 def compute_rule_score(transaction: dict, user_history: list) -> float:
     """
@@ -62,9 +43,6 @@ def compute_rule_score(transaction: dict, user_history: list) -> float:
     score     = 0
     max_score = 3
 
-    # FIX: Normalize the incoming transaction timestamp to UTC-aware.
-    # Pydantic parses ISO strings with timezone info as offset-aware datetimes,
-    # while MongoDB returns naive UTC datetimes — mixing them causes TypeError.
     now = _to_utc(transaction.get("timestamp"))
     if not now:
         return 0.0
@@ -79,7 +57,7 @@ def compute_rule_score(transaction: dict, user_history: list) -> float:
     if not recent_history:
         return 0.0
 
-    # ── Rule 1: Amount anomaly ────────────────────────────────────────────────
+    # Rule 1: Amount anomaly 
     # If this transaction's amount is more than 2 standard deviations
     # above the user's recent average, it's statistically unusual.
     amounts = [t["amount"] for t in recent_history]
@@ -91,7 +69,7 @@ def compute_rule_score(transaction: dict, user_history: list) -> float:
             if z_score > 2:
                 score += 1
 
-    # ── Rule 2: Location anomaly ──────────────────────────────────────────────
+    # Rule 2: Location anomaly 
     # If the average distance from this transaction to all recent transactions
     # is greater than 500 km, the user is transacting far from usual.
     try:
@@ -109,7 +87,7 @@ def compute_rule_score(transaction: dict, user_history: list) -> float:
     except Exception:
         pass
 
-    # ── Rule 3: Time anomaly ──────────────────────────────────────────────────
+    # Rule 3: Time anomaly 
     # If this transaction's hour is more than 6 hours away from the user's
     # average transaction hour, it's happening at an unusual time.
     txn_hour   = now.hour

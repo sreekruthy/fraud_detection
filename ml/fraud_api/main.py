@@ -1,12 +1,3 @@
-"""
-main.py
--------
-Entry point. Keeps FastAPI routing clean and thin.
-All logic lives in app/services/transaction_service.py
-Run with:
-    uvicorn main:app --reload --port 8000
-"""
-
 import traceback
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -14,21 +5,13 @@ from typing import Optional
 from datetime import datetime
 from app.services.transaction_service import create_transaction
 
-# ── App ───────────────────────────────────────────────────────────────────────
+# App
 app = FastAPI(
     title="Fraud Detection API",
     description="Receives a transaction, runs rule engine + ML model, saves to MongoDB.",
     version="2.0.0"
 )
-"""
-main.py
--------
-Entry point. Keeps FastAPI routing clean and thin.
-All logic lives in app/services/transaction_service.py
 
-Run with:
-    uvicorn main:app --reload --port 8000
-"""
 
 import asyncio
 import traceback
@@ -39,14 +22,14 @@ from datetime import datetime, timezone
 from app.services.transaction_service import create_transaction
 from app.db.mongo import db
 
-# ── App ───────────────────────────────────────────────────────────────────────
+# App
 app = FastAPI(
     title="Fraud Detection API",
     description="Receives a transaction, runs rule engine + ML model, saves to MongoDB.",
     version="2.0.0"
 )
 
-# ── Pydantic schemas ──────────────────────────────────────────────────────────
+# Pydantic schemas
 class Location(BaseModel):
     city:      str
     country:   str
@@ -69,7 +52,7 @@ class TransactionRequest(BaseModel):
     receiver_id:    str
     user_home_city: Optional[str] = "New York"
 
-# ── Expiry background task ────────────────────────────────────────────────────
+# Expiry background task 
 
 async def expire_on_hold_transactions():
     """
@@ -121,7 +104,7 @@ async def expire_on_hold_transactions():
         await asyncio.sleep(60)
 
 
-# ── Startup / Shutdown ────────────────────────────────────────────────────────
+# Startup / Shutdown 
 
 @app.on_event("startup")
 async def startup():
@@ -133,7 +116,7 @@ async def startup():
     print("✅ Expiry background task started")
 
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+# Routes
 
 @app.post("/transaction")
 async def evaluate_transaction(request: TransactionRequest):
@@ -152,7 +135,7 @@ async def evaluate_transaction(request: TransactionRequest):
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "2.0.0"}
-# ── Pydantic schemas ──────────────────────────────────────────────────────────
+# Pydantic schemas
 class Location(BaseModel):
     city:      str
     country:   str
@@ -175,7 +158,7 @@ class TransactionRequest(BaseModel):
     receiver_id:    str
     user_home_city: Optional[str] = "New York"
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+# Routes
 @app.post("/transaction")
 async def evaluate_transaction(request: TransactionRequest):
     """

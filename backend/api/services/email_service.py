@@ -1,28 +1,3 @@
-"""
-api/services/email_service.py
-------------------------------
-Two distinct email types with fundamentally different messaging:
-
-send_suspicious_email():
-  - Orange HIGH RISK banner
-  - "This transaction is ON HOLD"
-  - Shows live 2-minute countdown timer (CSS animation)
-  - "Please respond within 2 minutes — your transaction will be held"
-  - Two buttons: "Yes, this was me" / "No, this wasn't me"
-  - If no response in 2 min → admin decides using your history
-
-send_fraud_email():
-  - Red CRITICAL banner
-  - "Your transaction has been BLOCKED"
-  - Shows all fraud signals (triggered rules, scores, top features)
-  - "Was this actually you?"
-  - If YES → "Please redo your transaction — this one cannot be unblocked"
-  - If NO  → "Thank you for confirming. Your account is being reviewed."
-  - Response is for records/retraining ONLY, does not unblock
-
-SMTP: Uses MailHog locally (localhost:1025), view at http://localhost:8025
-"""
-
 import os
 import jwt
 import aiosmtplib
@@ -69,9 +44,8 @@ async def _send(to_email: str, subject: str, html: str):
     )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # SUSPICIOUS email — transaction is ON HOLD, user has 2 minutes
-# ─────────────────────────────────────────────────────────────────────────────
 
 async def send_suspicious_email(
     user_email: str,
@@ -201,10 +175,8 @@ async def send_suspicious_email(
     )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FRAUD email — transaction already BLOCKED, response is for retraining
-# ─────────────────────────────────────────────────────────────────────────────
 
+# FRAUD email — transaction already BLOCKED, response is for retraining
 async def send_fraud_email(
     user_email: str,
     user_name: str,

@@ -1,32 +1,8 @@
-"""
-api/routers/feedback.py
-------------------------
-Handles user responses from email verification links.
-
-SUSPICIOUS responses:
-  - User responded in time → update txn_status, resolve alert
-  - "legitimate" → CONFIRMED_LEGIT (transaction processed)
-  - "fraud"      → BLOCKED (transaction blocked)
-  - Either way, the alert is resolved and admin is no longer needed
-
-FRAUD responses:
-  - Transaction is already BLOCKED — response does NOT change txn_status
-  - Response is saved to customer_feedback for retraining ONLY
-  - "legitimate" → user is reminded to redo the transaction
-  - "fraud"      → thank user, account flagged for review
-  - Alert stays as AUTO_BLOCKED (already resolved)
-
-Admin action endpoint:
-  - Used for SUSPICIOUS transactions ONLY (after user window expires)
-  - Admin sees user history summary and makes PERMIT or BLOCK decision
-"""
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from datetime import datetime, timezone
 import os
 
-# ── FIX: use PyJWT explicitly — the bare `jwt` package has no .decode() ──────
 try:
     import PyJWT as jwt
 except ImportError:
@@ -61,7 +37,7 @@ def decode_token(token: str) -> dict:
         raise HTTPException(status_code=400, detail="Invalid verification link.")
 
 
-# ── GET /verify — frontend calls this to show transaction info ────────────────
+# GET /verify 
 
 @router.get("/verify")
 async def get_verify_info(token: str = Query(...)):
@@ -106,7 +82,7 @@ async def get_verify_info(token: str = Query(...)):
     }
 
 
-# ── POST /respond — user clicks Yes/No button in email ───────────────────────
+# POST /respond — user clicks Yes/No button in email 
 
 @router.post("/respond")
 async def user_respond(
@@ -137,7 +113,7 @@ async def user_respond(
 
     now = datetime.now(timezone.utc)
 
-    # ── SUSPICIOUS response ───────────────────────────────────────────────────
+    # SUSPICIOUS response 
     # User's answer directly determines the transaction outcome
     if purpose == "suspicious_verify" or txn.get("decision") == "SUSPICIOUS":
         new_status   = "CONFIRMED_LEGIT" if response == "legitimate" else "BLOCKED"
@@ -167,7 +143,7 @@ async def user_respond(
             ),
         }
 
-    # ── FRAUD response ────────────────────────────────────────────────────────
+    # FRAUD response 
     # Transaction is already BLOCKED — this response is for retraining only.
     # txn_status does NOT change, no matter what user says.
     elif purpose == "fraud_feedback" or txn.get("decision") == "FRAUD":
@@ -199,7 +175,7 @@ async def user_respond(
     return {"message": "Response recorded.", "transaction_id": txn_id}
 
 
-# ── POST /admin-action — admin manually decides on a SUSPICIOUS transaction ───
+# POST /admin-action — admin manually decides on a SUSPICIOUS transaction 
 
 @router.post("/admin-action")
 async def admin_action(
@@ -243,7 +219,7 @@ async def admin_action(
     }
 
 
-# ── POST /analyst — analyst manual review ────────────────────────────────────
+# POST /analyst — analyst manual review 
 
 @router.post("/analyst")
 async def analyst_feedback(

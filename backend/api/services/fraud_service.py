@@ -1,9 +1,8 @@
 import random
 
 
-# -----------------------------
+
 # Fraud Risk Scoring
-# -----------------------------
 def calculate_risk_score(transaction):
 
     # Placeholder logic until ML model integration

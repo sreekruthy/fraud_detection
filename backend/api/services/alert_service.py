@@ -3,12 +3,7 @@ from datetime import datetime, timezone
 
 
 async def get_alerts(status: str | None = None) -> list[dict]:
-    """
-    Fetch alerts, optionally filtered by status.
-    Called by /api/alerts/ and /api/alerts/open endpoints.
 
-    status: "OPEN" | "RESOLVED" | None (returns all)
-    """
     query = {}
     if status:
         query["status"] = status
