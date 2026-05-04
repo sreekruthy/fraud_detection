@@ -45,11 +45,11 @@
 │   backend/api/main.py    │────▶│   DB: FraudDetection               │
 │   Port 8001              │     │                                    │
 │                          │     │   collections:                     │
-│   Routers:               │     │   - admins        (1 doc)          │
-│   /api/transactions      │     │   - alerts        (27 docs)        │
-│   /api/alerts            │     │   - fraud_results (40 docs)        │
-│   /api/auth              │     │   - transactions  (30 docs)        │
-│   /api/feedback          │     │   - users         (14 docs)        │
+│   Routers:               │     │   - admins                         │
+│   /api/transactions      │     │   - alerts                         │
+│   /api/alerts            │     │   - fraud_results                  │
+│   /api/auth              │     │   - transactions                   │
+│   /api/feedback          │     │   - users                          │
 └────────────┬─────────────┘     └────────────────────────────────────┘
              │
              ▼
