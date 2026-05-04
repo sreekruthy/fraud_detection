@@ -1,31 +1,3 @@
-"""
-app/services/email_service.py
-------------------------------
-Two distinct email types with fundamentally different messaging:
-
-send_suspicious_email():
-  - Orange HIGH RISK banner
-  - "This transaction is ON HOLD"
-  - Shows live 2-minute countdown timer (CSS animation)
-  - "Please respond within 2 minutes — your transaction will be held"
-  - Two buttons: "Yes, this was me" / "No, this wasn't me"
-  - If no response in 2 min → admin decides using your history
-
-send_fraud_email():
-  - Red CRITICAL banner
-  - "Your transaction has been BLOCKED"
-  - Shows all fraud signals (triggered rules, scores, top features)
-  - "Was this actually you?"
-  - If YES → "Please redo your transaction — this one cannot be unblocked"
-  - If NO  → "Thank you for confirming. Your account is being reviewed."
-  - Response is for records/retraining ONLY, does not unblock
-
-SMTP: Uses MailHog locally (localhost:1025), view at http://localhost:8025
-
-FIX: Replaced `import jwt` with `import PyJWT as jwt` — avoids conflict with
-     the bare `jwt` package on PyPI which lacks `.encode()`.
-"""
-
 import os
 import aiosmtplib
 from datetime import datetime, timezone, timedelta
@@ -58,7 +30,6 @@ def _build_token(transaction_id: str, purpose: str, expires_in_seconds: int = 86
         "exp":            datetime.now(timezone.utc) + timedelta(seconds=expires_in_seconds),
     }
     token = pyjwt.encode(payload, FEEDBACK_SECRET, algorithm="HS256")
-    # PyJWT 2.x returns str; PyJWT 1.x returns bytes — normalise to str
     return token if isinstance(token, str) else token.decode("utf-8")
 
 

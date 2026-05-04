@@ -1,22 +1,3 @@
-/**
- * VerifyTransaction.jsx
- * ----------------------
- * User lands here from email link.
- *
- * SUSPICIOUS mode (purpose = "suspicious_verify"):
- *   - Shows live countdown (synced with hold_expires_at from DB)
- *   - "Your transaction is ON HOLD"
- *   - Two buttons: Yes / No → determines txn_status
- *   - If window expired: "Window closed — admin is reviewing"
- *
- * FRAUD mode (purpose = "fraud_feedback"):
- *   - Shows "Your transaction was BLOCKED"
- *   - Full fraud signals shown (triggered rules, top features, scores)
- *   - "Was this you?" — for retraining only
- *   - Yes → "Please redo your transaction"
- *   - No  → "Thank you — your account is being reviewed"
- */
-
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../api/axiosConfig.js";

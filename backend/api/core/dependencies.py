@@ -6,9 +6,7 @@ from api.core.config import settings
 # HTTP Bearer token scheme
 security = HTTPBearer()
 
-# --------------------------------
 # Get Current User from Token
-# --------------------------------
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
     try:
@@ -24,9 +22,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             detail="Invalid or expired token"
         )
 
-# --------------------------------
 # Role-Based Access Control
-# --------------------------------
 def require_role(required_role: str):
     def role_checker(user=Depends(get_current_user)):
         if user.get("role") != required_role:

@@ -1,19 +1,3 @@
-"""
-transaction_simulator.py
-------------------------
-Place this file at your PROJECT ROOT:
-  fraud_detection/transaction_simulator.py
-
-Run from project root:
-  python transaction_simulator.py --users-only
-  python transaction_simulator.py --count 30
-
-This script:
-  1. Reads MongoDB URI from ml/fraud_api/.env (where your MONGO_URI lives)
-  2. Seeds 8 test users into the users collection
-  3. Sends transactions to the ML API at port 8000
-"""
-
 import asyncio
 import argparse
 import random
@@ -23,7 +7,7 @@ import sys
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
-# ── Load .env from ml/fraud_api/.env (that's where MONGO_URI lives) ───────────
+# Load .env from ml/fraud_api/.env
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent          # project root
@@ -49,7 +33,7 @@ if not MONGO_URI:
 
 print(f"✅ MONGO_URI loaded (DB: {DB_NAME})")
 
-# ── Import motor AFTER confirming env loaded ──────────────────────────────────
+# Import motor AFTER confirming env loaded 
 import httpx
 import bcrypt
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -57,7 +41,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 client = AsyncIOMotorClient(MONGO_URI)
 db     = client[DB_NAME]
 
-# ── User pool ─────────────────────────────────────────────────────────────────
+# User pool 
 USER_POOL = [
     {"user_id": "USR_001", "name": "Alice Johnson", "email": "alice@mailhog.test",  "home_city": "New York"},
     {"user_id": "USR_002", "name": "Bob Smith",     "email": "bob@mailhog.test",    "home_city": "Los Angeles"},
@@ -69,7 +53,7 @@ USER_POOL = [
     {"user_id": "USR_008", "name": "Henry Brown",   "email": "henry@mailhog.test",  "home_city": "Philadelphia"},
 ]
 
-# ── Locations ─────────────────────────────────────────────────────────────────
+# Locations 
 NORMAL_LOCATIONS = [
     {"city": "New York",     "country": "US", "latitude": 40.7128,  "longitude": -74.0060},
     {"city": "Los Angeles",  "country": "US", "latitude": 34.0522,  "longitude": -118.2437},
@@ -98,7 +82,7 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
-# ── Seed users ────────────────────────────────────────────────────────────────
+# Seed users
 
 async def seed_users():
     print("\n👥 Seeding users into MongoDB…")
@@ -126,7 +110,7 @@ async def seed_users():
     print(f"\n  Done — {created} new users created, {len(USER_POOL) - created} already existed.\n")
 
 
-# ── Build transaction payloads ─────────────────────────────────────────────────
+# Build transaction payloads
 
 def _txn_id():
     return f"TXN_{uuid.uuid4().hex[:10].upper()}"
@@ -184,7 +168,7 @@ def make_fraud_txn(user):
     }
 
 
-# ── Send one transaction to ML API ────────────────────────────────────────────
+# Send one transaction to ML API
 
 async def send_txn(http: httpx.AsyncClient, txn: dict):
     """
@@ -199,17 +183,16 @@ async def send_txn(http: httpx.AsyncClient, txn: dict):
     except httpx.ConnectError:
         print(f"\n❌ Cannot connect to ML API at {ML_API}")
         print("   Make sure you ran: cd ml/fraud_api && uvicorn main:app --reload --port 8000")
-        return None, True          # ← connection error: counts toward abort
+        return None, True          #  connection error: counts toward abort
     except httpx.HTTPStatusError as e:
         print(f"    ⚠️  HTTP {e.response.status_code} — skipping this transaction")
-        return None, False         # ← server-side error: just skip, keep going
+        return None, False         #  server-side error: just skip, keep going
     except Exception as e:
         print(f"    ⚠️  Unexpected error: {e} — skipping")
         return None, False
 
 
-# ── Main simulation ────────────────────────────────────────────────────────────
-
+# Main simulation
 async def run_simulation(total: int = 30):
     await seed_users()
 
@@ -278,7 +261,7 @@ async def run_simulation(total: int = 30):
         print(f"    {u['email']}")
 
 
-# ── Entry point ───────────────────────────────────────────────────────────────
+# Entry point 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
